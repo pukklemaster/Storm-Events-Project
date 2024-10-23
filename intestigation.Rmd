@@ -24,7 +24,9 @@ library(tidyverse)
 
 
 ```{r load-data}
-# load your data 
+details = read_csv('Data/details_combined.csv')
+fatalities = read_csv('Data/fatalities_combined.csv')
+locations = read_csv('Data/locations_combined.csv')
 
 
 
