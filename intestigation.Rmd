@@ -7,53 +7,45 @@ output: html_document
 
 **Note:** You can use this file as you 'working document' where you can try out various investigation ideas and keep notes about your findings. How you use and structure this file is up to you. It is recommended that you keep notes about what you are investigating and what you find as this will make the process of creating your presentation and report easier. Please note that you _do not_ need to submit this file as part of your group project.
 
-
-
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-
 ```{r load-lib, message = FALSE}
 library(tidyverse)
-# Add any other libraries here
-
-
-
 ```
-
 
 ```{r load-data}
-#details = read_csv('Data/details_combined.csv')
-#fatalities = read_csv('Data/fatalities_combined.csv')
-#locations = read_csv('Data/locations_combined.csv')
+details = read_csv('Data/details_combined.csv')
+fatalities = read_csv('Data/fatalities_combined.csv')
+locations = read_csv('Data/locations_combined.csv')
 ```
 
-```{r Helen (green)}
-#details <- details %>%  
+```{r Details Cleaning}
+details <- details %>%
+  # Combine date elements
+  unite("BEGIN_DATE", BEGIN_YEARMONTH, BEGIN_DAY, sep = "") %>% 
+  mutate(
+    # Convert date to a character for union
+    BEGIN_DATE = as.character(BEGIN_DATE),
+    # Add leading zero if the time is 3 digits
+    BEGIN_TIME = case_when(
+      BEGIN_TIME < 1000 ~ sprintf("%04d", BEGIN_TIME),
+      TRUE ~ as.character(BEGIN_TIME)
+    )
+  ) %>%
+  # Combine date and time into one string
+  unite("BEGIN_DT", BEGIN_DATE, BEGIN_TIME, sep = " ") %>%
+  mutate(
+    # Convert to a datetime
+    BEGIN_DT = ymd_hm(BEGIN_DT)
+  )
 
-  #unite(col='BEGIN_DATE', c('BEGIN_YEARMONTH', 'BEGIN_DAY'), sep='') %>%  
+# Remove unnecessary columns
+details <- details %>%
+  select(-c(EVENT_NARRATIVE, EPISODE_NARRATIVE, YEAR, MONTH_NAME))
 
-  #unite(col='BEGIN_DT', c('BEGIN_DATE', 'BEGIN_TIME'), sep=' ') 
-
- 
-
-#details <- details %>% 
-
-  #mutate( 
-
-    #BEGIN_DT = ymd_hm(BEGIN_DT) 
-
-  #) 
-```
-
-```{r Adam (purple)}
-details <- details %>%  
-
-  select(-c(EVENT_NARRATIVE, EPISODE_NARRATIVE, YEAR, MONTH_NAME)) 
-```
-
-```{r Max (blue)}
+# Rename incorrect column names
 details <- details %>%
   rename(REGION = STATE,
          REGION_FIPS = STATE_FIPS)

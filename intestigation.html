@@ -366,8 +366,7 @@ investigating and what you find as this will make the process of
 creating your presentation and report easier. Please note that you
 <em>do not</em> need to submit this file as part of your group
 project.</p>
-<pre class="r"><code>library(tidyverse)
-# Add any other libraries here</code></pre>
+<pre class="r"><code>library(tidyverse)</code></pre>
 <pre class="r"><code>details = read_csv(&#39;Data/details_combined.csv&#39;)</code></pre>
 <pre><code>## Warning: One or more parsing issues, call `problems()` on your data frame for details,
 ## e.g.:
@@ -400,6 +399,33 @@ project.</p>
 ## 
 ## ℹ Use `spec()` to retrieve the full column specification for this data.
 ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+<pre class="r"><code>details &lt;- details %&gt;%
+  # Combine date elements
+  unite(&quot;BEGIN_DATE&quot;, BEGIN_YEARMONTH, BEGIN_DAY, sep = &quot;&quot;) %&gt;% 
+  mutate(
+    # Convert date to a character for union
+    BEGIN_DATE = as.character(BEGIN_DATE),
+    # Add leading zero if the time is 3 digits
+    BEGIN_TIME = case_when(
+      BEGIN_TIME &lt; 1000 ~ sprintf(&quot;%04d&quot;, BEGIN_TIME),
+      TRUE ~ as.character(BEGIN_TIME)
+    )
+  ) %&gt;%
+  # Combine date and time into one string
+  unite(&quot;BEGIN_DT&quot;, BEGIN_DATE, BEGIN_TIME, sep = &quot; &quot;) %&gt;%
+  mutate(
+    # Convert to a datetime
+    BEGIN_DT = ymd_hm(BEGIN_DT)
+  )
+
+# Remove unnecessary columns
+details &lt;- details %&gt;%
+  select(-c(EVENT_NARRATIVE, EPISODE_NARRATIVE, YEAR, MONTH_NAME))
+
+# Rename incorrect column names
+details &lt;- details %&gt;%
+  rename(REGION = STATE,
+         REGION_FIPS = STATE_FIPS)</code></pre>
 
 
 
