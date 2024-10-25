@@ -11,7 +11,7 @@
 
 <meta name="author" content="by Team-Name: User1, User2, User3, User4 &amp; User5" />
 
-<meta name="date" content="2024-10-18" />
+<meta name="date" content="2024-10-25" />
 
 <title>IDS investigation worksheet</title>
 
@@ -353,7 +353,7 @@ display: none;
 <h1 class="title toc-ignore">IDS investigation worksheet</h1>
 <h4 class="author">by Team-Name: User1, User2, User3, User4 &amp;
 User5</h4>
-<h4 class="date">2024-10-18</h4>
+<h4 class="date">2024-10-25</h4>
 
 </div>
 
@@ -368,7 +368,38 @@ creating your presentation and report easier. Please note that you
 project.</p>
 <pre class="r"><code>library(tidyverse)
 # Add any other libraries here</code></pre>
-<pre class="r"><code># load your data </code></pre>
+<pre class="r"><code>details = read_csv(&#39;Data/details_combined.csv&#39;)</code></pre>
+<pre><code>## Warning: One or more parsing issues, call `problems()` on your data frame for details,
+## e.g.:
+##   dat &lt;- vroom(...)
+##   problems(dat)</code></pre>
+<pre><code>## Rows: 1679199 Columns: 51
+## ── Column specification ────────────────────────────────────────────────────────
+## Delimiter: &quot;,&quot;
+## chr (25): STATE, MONTH_NAME, EVENT_TYPE, CZ_TYPE, CZ_NAME, WFO, BEGIN_DATE_T...
+## dbl (25): BEGIN_YEARMONTH, BEGIN_DAY, BEGIN_TIME, END_YEARMONTH, END_DAY, EN...
+## lgl  (1): CATEGORY
+## 
+## ℹ Use `spec()` to retrieve the full column specification for this data.
+## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+<pre class="r"><code>fatalities = read_csv(&#39;Data/fatalities_combined.csv&#39;)</code></pre>
+<pre><code>## Rows: 21583 Columns: 11
+## ── Column specification ────────────────────────────────────────────────────────
+## Delimiter: &quot;,&quot;
+## chr (4): FATALITY_TYPE, FATALITY_DATE, FATALITY_SEX, FATALITY_LOCATION
+## dbl (7): FAT_YEARMONTH, FAT_DAY, FAT_TIME, FATALITY_ID, EVENT_ID, FATALITY_A...
+## 
+## ℹ Use `spec()` to retrieve the full column specification for this data.
+## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
+<pre class="r"><code>locations = read_csv(&#39;Data/locations_combined.csv&#39;)</code></pre>
+<pre><code>## Rows: 1629049 Columns: 11
+## ── Column specification ────────────────────────────────────────────────────────
+## Delimiter: &quot;,&quot;
+## chr (2): AZIMUTH, LOCATION
+## dbl (9): YEARMONTH, EPISODE_ID, EVENT_ID, LOCATION_INDEX, RANGE, LATITUDE, L...
+## 
+## ℹ Use `spec()` to retrieve the full column specification for this data.
+## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
 
 
 

@@ -27,17 +27,21 @@ library(tidyverse)
 details = read_csv('Data/details_combined.csv')
 fatalities = read_csv('Data/fatalities_combined.csv')
 locations = read_csv('Data/locations_combined.csv')
+```
 
-
-details %>% 
-  ggplot(mapping = aes(
-    x  = event_type,
-    y = n(even_type)
-  )) +
-  geom_bar()
-
-
+```{r Helen (green)}
 
 ```
 
+```{r Adam (purple)}
+
+```
+
+```{r Max (blue)}
+
+```
+
+```{r Fatalities (orange)}
+
+```
 
