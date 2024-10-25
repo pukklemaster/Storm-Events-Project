@@ -38,6 +38,10 @@ locations = read_csv('Data/locations_combined.csv')
 ```
 
 ```{r Max (blue)}
+details <- details %>%
+  rename(REGION = STATE,
+         REGION_FIPS = STATE_FIPS)
+
 
 ```
 
