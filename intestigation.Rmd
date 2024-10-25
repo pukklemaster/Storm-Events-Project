@@ -29,6 +29,13 @@ fatalities = read_csv('Data/fatalities_combined.csv')
 locations = read_csv('Data/locations_combined.csv')
 
 
+details %>% 
+  ggplot(mapping = aes(
+    x  = event_type,
+    y = n(even_type)
+  )) +
+  geom_bar()
+
 
 
 ```
