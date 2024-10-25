@@ -24,25 +24,39 @@ library(tidyverse)
 
 
 ```{r load-data}
-details = read_csv('Data/details_combined.csv')
-fatalities = read_csv('Data/fatalities_combined.csv')
-locations = read_csv('Data/locations_combined.csv')
+#details = read_csv('Data/details_combined.csv')
+#fatalities = read_csv('Data/fatalities_combined.csv')
+#locations = read_csv('Data/locations_combined.csv')
 ```
 
 ```{r Helen (green)}
+#details <- details %>%  
 
+  #unite(col='BEGIN_DATE', c('BEGIN_YEARMONTH', 'BEGIN_DAY'), sep='') %>%  
+
+  #unite(col='BEGIN_DT', c('BEGIN_DATE', 'BEGIN_TIME'), sep=' ') 
+
+ 
+
+#details <- details %>% 
+
+  #mutate( 
+
+    #BEGIN_DT = ymd_hm(BEGIN_DT) 
+
+  #) 
 ```
 
 ```{r Adam (purple)}
+details <- details %>%  
 
+  select(-c(EVENT_NARRATIVE, EPISODE_NARRATIVE, YEAR, MONTH_NAME)) 
 ```
 
 ```{r Max (blue)}
 details <- details %>%
   rename(REGION = STATE,
          REGION_FIPS = STATE_FIPS)
-
-
 ```
 
 ```{r Fatalities (orange)}
