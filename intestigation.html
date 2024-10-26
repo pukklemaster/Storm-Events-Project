@@ -11,7 +11,7 @@
 
 <meta name="author" content="by Team-Name: User1, User2, User3, User4 &amp; User5" />
 
-<meta name="date" content="2024-10-25" />
+<meta name="date" content="2024-10-26" />
 
 <title>IDS investigation worksheet</title>
 
@@ -353,7 +353,7 @@ display: none;
 <h1 class="title toc-ignore">IDS investigation worksheet</h1>
 <h4 class="author">by Team-Name: User1, User2, User3, User4 &amp;
 User5</h4>
-<h4 class="date">2024-10-25</h4>
+<h4 class="date">2024-10-26</h4>
 
 </div>
 
@@ -399,11 +399,12 @@ project.</p>
 ## 
 ## ℹ Use `spec()` to retrieve the full column specification for this data.
 ## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
-<pre class="r"><code>details &lt;- details %&gt;%
+<pre class="r"><code>#merge and convert formats of begin-date variables
+details &lt;- details %&gt;%
   # Combine date elements
   unite(&quot;BEGIN_DATE&quot;, BEGIN_YEARMONTH, BEGIN_DAY, sep = &quot;&quot;) %&gt;% 
   mutate(
-    # Convert date to a character for union
+    # Convert date to a character for union with time
     BEGIN_DATE = as.character(BEGIN_DATE),
     # Add leading zero if the time is 3 digits
     BEGIN_TIME = case_when(
@@ -411,11 +412,31 @@ project.</p>
       TRUE ~ as.character(BEGIN_TIME)
     )
   ) %&gt;%
-  # Combine date and time into one string
+  # Unite date and time into one string
   unite(&quot;BEGIN_DT&quot;, BEGIN_DATE, BEGIN_TIME, sep = &quot; &quot;) %&gt;%
   mutate(
     # Convert to a datetime
     BEGIN_DT = ymd_hm(BEGIN_DT)
+  )
+
+#merge and convert formats of end-date variables
+details &lt;- details %&gt;%
+  # Combine date elements
+  unite(&quot;END_DATE&quot;, END_YEARMONTH, END_DAY, sep = &quot;&quot;) %&gt;% 
+  mutate(
+    # Convert date to a character for union with time
+    END_DATE = as.character(END_DATE),
+    # Add leading zero if the time is 3 digits
+    END_TIME = case_when(
+      END_TIME &lt; 1000 ~ sprintf(&quot;%04d&quot;, END_TIME),
+      TRUE ~ as.character(END_TIME)
+    )
+  ) %&gt;%
+  # Unite date and time into one string
+  unite(&quot;END_DT&quot;, END_DATE, END_TIME, sep = &quot; &quot;) %&gt;%
+  mutate(
+    # Convert to a datetime
+    END_DT = ymd_hm(END_DT)
   )
 
 # Remove unnecessary columns

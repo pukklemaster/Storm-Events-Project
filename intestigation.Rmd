@@ -22,11 +22,12 @@ locations = read_csv('Data/locations_combined.csv')
 ```
 
 ```{r Details Cleaning}
+#merge and convert formats of begin-date variables
 details <- details %>%
   # Combine date elements
   unite("BEGIN_DATE", BEGIN_YEARMONTH, BEGIN_DAY, sep = "") %>% 
   mutate(
-    # Convert date to a character for union
+    # Convert date to a character for union with time
     BEGIN_DATE = as.character(BEGIN_DATE),
     # Add leading zero if the time is 3 digits
     BEGIN_TIME = case_when(
@@ -34,11 +35,31 @@ details <- details %>%
       TRUE ~ as.character(BEGIN_TIME)
     )
   ) %>%
-  # Combine date and time into one string
+  # Unite date and time into one string
   unite("BEGIN_DT", BEGIN_DATE, BEGIN_TIME, sep = " ") %>%
   mutate(
     # Convert to a datetime
     BEGIN_DT = ymd_hm(BEGIN_DT)
+  )
+
+#merge and convert formats of end-date variables
+details <- details %>%
+  # Combine date elements
+  unite("END_DATE", END_YEARMONTH, END_DAY, sep = "") %>% 
+  mutate(
+    # Convert date to a character for union with time
+    END_DATE = as.character(END_DATE),
+    # Add leading zero if the time is 3 digits
+    END_TIME = case_when(
+      END_TIME < 1000 ~ sprintf("%04d", END_TIME),
+      TRUE ~ as.character(END_TIME)
+    )
+  ) %>%
+  # Unite date and time into one string
+  unite("END_DT", END_DATE, END_TIME, sep = " ") %>%
+  mutate(
+    # Convert to a datetime
+    END_DT = ymd_hm(END_DT)
   )
 
 # Remove unnecessary columns
