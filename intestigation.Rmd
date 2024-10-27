@@ -22,7 +22,7 @@ locations = read_csv('Data/locations_combined.csv')
 ```
 
 ```{r Details Cleaning}
-#merge and convert formats of begin-date variables
+# Merge and convert formats of begin-date variables
 details <- details %>%
   # Combine date elements
   unite("BEGIN_DATE", BEGIN_YEARMONTH, BEGIN_DAY, sep = "") %>% 
@@ -42,7 +42,7 @@ details <- details %>%
     BEGIN_DT = ymd_hm(BEGIN_DT)
   )
 
-#merge and convert formats of end-date variables
+# Merge and convert formats of end-date variables
 details <- details %>%
   # Combine date elements
   unite("END_DATE", END_YEARMONTH, END_DAY, sep = "") %>% 
@@ -64,15 +64,29 @@ details <- details %>%
 
 # Remove unnecessary columns
 details <- details %>%
-  select(-c(EVENT_NARRATIVE, EPISODE_NARRATIVE, YEAR, MONTH_NAME))
+  select(-c(EVENT_NARRATIVE, EPISODE_NARRATIVE, YEAR, MONTH_NAME, BEGIN_DATE_TIME, END_DATE_TIME))
 
 # Rename incorrect column names
 details <- details %>%
   rename(REGION = STATE,
          REGION_FIPS = STATE_FIPS)
+
+# Create duration variable 
+details <- details %>% 
+  mutate(
+    duration = END_DT - BEGIN_DT
+  ) %>% 
+    mutate(
+      duration = as.numeric(duration)
+    )
 ```
 
 ```{r Fatalities (orange)}
-
+details %>% 
+  ggplot(mapping = aes(
+    x = duration,
+    y = EVENT_TYPE
+  )) +
+  geom_violin()
 ```
 
