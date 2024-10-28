@@ -64,7 +64,7 @@ details <- details %>%
 
 # Remove unnecessary columns
 details <- details %>%
-  select(-c(EVENT_NARRATIVE, EPISODE_NARRATIVE, YEAR, MONTH_NAME, BEGIN_DATE_TIME, END_DATE_TIME))
+  select(-c(YEAR, MONTH_NAME, BEGIN_DATE_TIME, END_DATE_TIME))
 
 # Rename incorrect column names
 details <- details %>%
@@ -77,13 +77,14 @@ details <- details %>%
     duration = END_DT - BEGIN_DT
   ) %>% 
     mutate(
-      duration = as.numeric(duration)
+      duration = as.numeric(duration) / 60
     )
 
 # Change cost suffixes
 details <- details %>% 
   mutate(
-    DAMAGE_PROPERTY = gsub('K','e+03', DAMAGE_PROPERTY)
+    DAMAGE_PROPERTY = as.numeric(gsub("K", "e+03", gsub("M", "e+06", DAMAGE_PROPERTY))),
+    DAMAGE_CROPS = as.numeric(gsub("K", "e+03", gsub("M", "e+06", DAMAGE_CROPS)))
   )
 ```
 
