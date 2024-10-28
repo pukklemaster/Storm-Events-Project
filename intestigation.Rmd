@@ -79,14 +79,14 @@ details <- details %>%
     mutate(
       duration = as.numeric(duration)
     )
+
+# Change cost suffixes
+details <- details %>% 
+  mutate(
+    DAMAGE_PROPERTY = gsub('K','e+03', DAMAGE_PROPERTY)
+  )
 ```
 
 ```{r Fatalities (orange)}
-details %>% 
-  ggplot(mapping = aes(
-    x = duration,
-    y = EVENT_TYPE
-  )) +
-  geom_violin()
 ```
 
