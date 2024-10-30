@@ -470,6 +470,29 @@ details &lt;- details %&gt;%
 ## Caused by warning:
 ## ! NAs introduced by coercion
 ## ℹ Run `dplyr::last_dplyr_warnings()` to see the 1 remaining warning.</code></pre>
+<pre class="r"><code>fatalities %&gt;% 
+  select(-FAT_TIME, -FATALITY_DATE, -EVENT_YEARMONTH) %&gt;% 
+  mutate(YMD = ymd(paste(FAT_YEARMONTH, FAT_DAY))) %&gt;% 
+  select(-FAT_DAY) </code></pre>
+<pre><code>## Warning: There was 1 warning in `mutate()`.
+## ℹ In argument: `YMD = ymd(paste(FAT_YEARMONTH, FAT_DAY))`.
+## Caused by warning:
+## !  12 failed to parse.</code></pre>
+<pre><code>## # A tibble: 21,583 × 8
+##    FAT_YEARMONTH FATALITY_ID EVENT_ID FATALITY_TYPE FATALITY_AGE FATALITY_SEX
+##            &lt;dbl&gt;       &lt;dbl&gt;    &lt;dbl&gt; &lt;chr&gt;                &lt;dbl&gt; &lt;chr&gt;       
+##  1        199601     1001409  5556653 D                       19 M           
+##  2        199601     1001275  5548075 D                       75 F           
+##  3        199601     1001579  5569986 D                       54 M           
+##  4        199601     1001537  5574628 D                       37 M           
+##  5        199601     1001538  5574649 D                       23 F           
+##  6        199601     1001566  5569356 D                       47 M           
+##  7        199601     1001567  5569363 D                       76 M           
+##  8        199601     1001568  5569800 D                       62 F           
+##  9        199601     1001569  5569804 D                       17 M           
+## 10        199601     1001570  5569817 D                       32 M           
+## # ℹ 21,573 more rows
+## # ℹ 2 more variables: FATALITY_LOCATION &lt;chr&gt;, YMD &lt;date&gt;</code></pre>
 
 
 
