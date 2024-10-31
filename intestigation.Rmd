@@ -13,6 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r load-lib, message = FALSE}
 library(tidyverse)
+library(janitor)
 ```
 
 ```{r load-data}
@@ -86,16 +87,25 @@ details <- details %>%
     DAMAGE_PROPERTY = as.numeric(gsub("K", "e+03", gsub("M", "e+06", DAMAGE_PROPERTY))),
     DAMAGE_CROPS = as.numeric(gsub("K", "e+03", gsub("M", "e+06", DAMAGE_CROPS)))
   )
+
+details <- details %>%
+  mutate(
+    DAMAGE_TOTAL = DAMAGE_PROPERTY + DAMAGE_CROPS
+  )
+
+details <- details %>% 
+  filter(
+    !year(BEGIN_DT) == '2024'
+  )
+
+details <- details %>% 
+  clean_names()
 ```
 
-```{r Fatalities (orange)}
-
+```{r Fatalities Cleaning}
 fatalities %>% 
   select(-FAT_TIME, -FATALITY_DATE, -EVENT_YEARMONTH) %>% 
   mutate(YMD = ymd(paste(FAT_YEARMONTH, FAT_DAY))) %>% 
   select(-FAT_DAY) 
-
- 
-
 ```
 
