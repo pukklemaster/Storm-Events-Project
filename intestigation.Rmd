@@ -105,6 +105,9 @@ details <- details %>%
 fatalities %>% 
   select(-FAT_TIME, -FATALITY_DATE, -EVENT_YEARMONTH) %>% 
   mutate(YMD = ymd(paste(FAT_YEARMONTH, FAT_DAY))) %>% 
-  select(-FAT_DAY) 
+  select(-FAT_DAY)
+
+fatalities <- fatalities %>% 
+  clean_names()
 ```
 

@@ -477,7 +477,7 @@ details &lt;- details %&gt;%
 <pre class="r"><code>fatalities %&gt;% 
   select(-FAT_TIME, -FATALITY_DATE, -EVENT_YEARMONTH) %&gt;% 
   mutate(YMD = ymd(paste(FAT_YEARMONTH, FAT_DAY))) %&gt;% 
-  select(-FAT_DAY) </code></pre>
+  select(-FAT_DAY)</code></pre>
 <pre><code>## Warning: There was 1 warning in `mutate()`.
 ## ℹ In argument: `YMD = ymd(paste(FAT_YEARMONTH, FAT_DAY))`.
 ## Caused by warning:
@@ -497,6 +497,8 @@ details &lt;- details %&gt;%
 ## 10        199601     1001570  5569817 D                       32 M           
 ## # ℹ 21,573 more rows
 ## # ℹ 2 more variables: FATALITY_LOCATION &lt;chr&gt;, YMD &lt;date&gt;</code></pre>
+<pre class="r"><code>fatalities &lt;- fatalities %&gt;% 
+  clean_names()</code></pre>
 
 
 
