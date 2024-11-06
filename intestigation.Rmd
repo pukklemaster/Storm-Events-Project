@@ -19,7 +19,6 @@ library(janitor)
 ```{r load-data}
 details = read_csv('Data/details_combined.csv')
 fatalities = read_csv('Data/fatalities_combined.csv')
-locations = read_csv('Data/locations_combined.csv')
 ```
 
 ```{r Details Cleaning}
@@ -106,6 +105,9 @@ details <- details %>%
 fatalities %>% 
   select(-FAT_TIME, -FATALITY_DATE, -EVENT_YEARMONTH) %>% 
   mutate(YMD = ymd(paste(FAT_YEARMONTH, FAT_DAY))) %>% 
-  select(-FAT_DAY) 
+  select(-FAT_DAY)
+
+fatalities <- fatalities %>% 
+  clean_names()
 ```
 
