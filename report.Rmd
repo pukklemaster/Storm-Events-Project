@@ -1,6 +1,6 @@
 ---
-title: "Project title"
-author: "by Team-Name: User1, User2, User3, User4 & User5"
+title: "Just Commit"
+author: "by Team-Name: Andrew, Helen, Adam, Olivia, Sarah, Max"
 date: "`r Sys.Date()`"
 output: html_document
 ---
@@ -12,19 +12,16 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r load-lib, include = FALSE}
 library(tidyverse)
-# Add any other libraries here
-# TEST LINE MUHAHAHAHAHAHAHA
+library(janitor)
 
 
 ```
 
 
 ```{r load-data, include=FALSE}
-# load your data here and any pre-processing/cleaning 
-#  that you need for your report.
 
-
-
+#details = read_csv('Data/details_combined.csv')
+#fatalities = read_csv('Data/fatalities_combined.csv')
 
 ```
 
@@ -44,7 +41,7 @@ Include a citation for your data.
 See http://libraryguides.vu.edu.au/c.php?g=386501&p=4347840 for guidance on proper citation for datasets. 
 If you got your data off the web, make sure to state the retrieval date.
 
-
+We did cleaning on the data by cleaning the names, removing unwanted variables, joining dates with lubridate, and making the cost of damages into one column whilst turning it from character to double data type.
 
 
 
@@ -73,6 +70,7 @@ Make sure to hide your code with  `echo = FALSE` unless the point you are trying
 
 ## References
 
-List any references here. You should, at a minimum, list your data source.
+NOAA Weather service, provided data for the project, accessed at URL: https://www.ncdc.noaa.gov/stormevents/faq.jsp
+NOAA Weather service, data format guide, accessed at URL: https://www.ncei.noaa.gov/pub/data/swdi/stormevents/csvfiles/Storm-Data-Bulk-csv-Format.pdf
 
 
