@@ -111,3 +111,43 @@ fatalities <- fatalities %>%
   clean_names()
 ```
 
+
+```{r}
+cost_data <- details %>% 
+  select(
+    event_type, damage_property, damage_crops
+  ) %>% 
+    group_by(
+      event_type
+    ) %>% 
+      summarise(
+        Property = sum(damage_property, na.rm=TRUE),
+        Crops = sum(damage_crops, na.rm=TRUE)
+      ) %>%
+        top_n(
+          20, 
+          Property + Crops
+        ) %>% 
+          pivot_longer(cols=c('Property', 'Crops'),
+                      names_to='type',
+                      values_to='damage'
+          )
+
+cost_data %>% 
+  ggplot(mapping=aes(
+    x=damage/sum(damage)*100,
+    y=reorder(event_type, damage),
+    fill=type
+  )) +
+  geom_col() +
+  labs(title = 'Damage by Storm Event Type between 1996 & 2023', 
+       subtitle = 'Total Damage (Property + Crops) was $227bn',
+       y = 'Type of Event',
+       x = 'Pecentage of Total Damage',
+       fill='Damage Type',
+       caption='Only the 20 most damaging event types are shown.'
+  ) +
+  theme(plot.caption = element_text(hjust = -0.85, face= "italic"))
+```
+
+
