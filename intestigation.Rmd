@@ -111,8 +111,7 @@ fatalities <- fatalities %>%
   clean_names()
 ```
 
-
-```{r}
+```{r percentage damage plot}
 cost_data <- details %>% 
   select(
     event_type, damage_property, damage_crops
@@ -133,7 +132,7 @@ cost_data <- details %>%
                       values_to='damage'
           )
 
-cost_data %>% 
+damage_plot <- cost_data %>% 
   ggplot(mapping=aes(
     x=damage/sum(damage)*100,
     y=reorder(event_type, damage),
@@ -147,7 +146,11 @@ cost_data %>%
        fill='Damage Type',
        caption='Only the 20 most damaging event types are shown.'
   ) +
+  theme_minimal() +
   theme(plot.caption = element_text(hjust = -0.85, face= "italic"))
+
+#ggsave('Damage by Event Type.jpg', plot=damage_plot)
+
 ```
 
 
