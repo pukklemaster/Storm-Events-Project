@@ -207,3 +207,12 @@ eval_percentage_criteria <- function(col, type) {
 3.57% of storm episodes led to injuries, while only 1.02% of events led to injuries.
 15.10% of storm episodes caused damage, while 15.39% of events causes damage.
 
+```{r Who is most affected by weather}
+
+fatalities %>%
+  ggplot(mapping = aes(x = fatality_age)) +
+    geom_histogram(binwidth = 4)
+
+```
+
+Going to add more details about what caused fatalities in different age groups and more - Andrew
