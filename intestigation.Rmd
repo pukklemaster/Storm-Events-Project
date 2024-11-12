@@ -111,7 +111,7 @@ fatalities <- fatalities %>%
   clean_names()
 ```
 
-```{r percentage damage plot}
+```{r percentage damage plot, eval=FALSE}
 cost_data <- details %>% 
   select(
     event_type, damage_property, damage_crops
@@ -153,4 +153,57 @@ damage_plot <- cost_data %>%
 
 ```
 
+```{r Simple Damage Statistics}
+eval_percentage_criteria <- function(col, type) {
+  col <- sym(col)
+  
+  if (type == 'event') {
+    total <- details %>% 
+      nrow()
+  
+    criteria_total <- details %>% 
+      filter(
+        !!col > 0
+      ) %>%
+        nrow()
+    
+    print('Percentage fulfilling criteria by event: ')
+    print(criteria_total / total * 100)
+  }
+  
+  else if (type == 'episode') {
+    total <- details %>% 
+      group_by(
+        episode_id
+      ) %>% 
+        summarise(
+          total = sum(!!col)
+        ) %>% 
+          nrow()
+    
+    criteria_total <- details %>% 
+      group_by(
+        episode_id
+      ) %>% 
+        summarise(
+          total = sum(!!col)
+        ) %>% 
+          filter(
+            total > 0
+          ) %>%
+            nrow()
+    
+    print('Percentage fulfilling criteria by episode: ')
+    print(criteria_total / total * 100)
+  }
+    
+  else {
+    stop("Type must be one of 'event' or 'episode'")
+  }
+}
+```
+
+2.61% of storm episodes led to fatalities, while only 0.74% of events led to fatalities.
+3.57% of storm episodes led to injuries, while only 1.02% of events led to injuries.
+15.10% of storm episodes caused damage, while 15.39% of events causes damage.
 
