@@ -107,6 +107,9 @@ fatalities <- fatalities %>%
   mutate(YMD = ymd(paste(FAT_YEARMONTH, FAT_DAY))) %>% 
   select(-FAT_DAY, -FAT_YEARMONTH)
 
+fatalities <- fatalities %>%
+  filter(!year(YMD) == '2024')
+
 fatalities <- fatalities %>% 
   clean_names()
 ```
