@@ -1,11 +1,9 @@
 ---
 title: "Andrew Personal Investigation"
-author: ""
+author: "meeeeeeeee"
 date: "`r Sys.Date()`"
 output: html_document
 ---
-
-**Note:** You can use this file as you 'working document' where you can try out various investigation ideas and keep notes about your findings. How you use and structure this file is up to you. It is recommended that you keep notes about what you are investigating and what you find as this will make the process of creating your presentation and report easier. Please note that you _do not_ need to submit this file as part of your group project.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -112,4 +110,13 @@ fatalities <- fatalities %>%
 
 fatalities <- fatalities %>% 
   clean_names()
+```
+
+
+```{r Who is most affected by weather}
+
+fatalities %>%
+  ggplot(mapping = aes(x = fatality_age)) +
+    geom_histogram(binwidth = 4)
+
 ```
