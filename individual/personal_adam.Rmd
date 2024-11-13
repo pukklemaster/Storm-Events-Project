@@ -14,11 +14,15 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r load-lib, message = FALSE}
 library(tidyverse)
 library(janitor)
+library(workflows)
+library(parsnip)
+library(tidyclust)
+library(tidymodels)
 ```
 
 ```{r load-data}
-details = read_csv('Data/details_combined.csv')
-fatalities = read_csv('Data/fatalities_combined.csv')
+details = read_csv('../Data/details_combined.csv')
+fatalities = read_csv('../Data/fatalities_combined.csv')
 ```
 
 ```{r Details Cleaning}
@@ -113,3 +117,89 @@ fatalities <- fatalities %>%
 fatalities <- fatalities %>% 
   clean_names()
 ```
+
+```{r}
+details <- details %>% 
+  mutate(
+    attributed_deaths = deaths_direct + deaths_indirect,
+    attributed_injuries = injuries_direct + injuries_indirect,
+    attributed_casualities = attributed_deaths + attributed_injuries
+  )
+```
+```{r}
+model_data <- details %>% 
+  select(
+    event_id, attributed_casualities, damage_total, event_type
+  ) %>% 
+    filter(
+      !is.na(damage_total) & !is.na(attributed_casualities)
+    )
+
+model_data_scaled <- model_data %>%
+  mutate(
+    damage_total = as.vector(scale(damage_total)),
+    attributed_casualities = as.vector(scale(attributed_casualities))
+  )
+
+
+k_list = list()
+sse_list = list()
+
+
+for (k in 1:10) {
+  kmeans_spec <- k_means(num_clusters = k)
+  
+  kmeans_fit <- kmeans_spec %>%
+    fit(~ damage_total + attributed_casualities, data = model_data_scaled)
+  
+  kmeans_result <- kmeans_fit$fit
+  sse <- kmeans_result$tot.withinss
+  
+  k_list <- c(k_list, k)
+  sse_list <- c(sse_list, sse)
+  
+  print(paste("Number of clusters:", k))
+  print(paste("Total SSE:", sse))
+}
+
+
+elbow_data <- data.frame(unlist(k_list), unlist(sse_list))
+names(elbow_data) = c("k","total_sse")
+
+
+elbow_data %>% 
+  ggplot(
+    mapping=aes(
+      x=k,
+      y=total_sse
+    )
+  ) + 
+  geom_line() +
+  geom_point() + 
+  scale_x_continuous(breaks = seq(1, 10, by = 1))
+```
+
+```{r}
+
+kmeans_spec <- k_means(num_clusters = 3)
+
+kmeans_fit <- kmeans_spec %>%
+  fit(~ damage_total + attributed_casualities, data = model_data_scaled)
+
+model_data_scaled <- kmeans_fit %>% 
+  augment(model_data_scaled)
+```
+
+
+```{r}
+model_data_scaled %>% 
+  ggplot(
+    mapping=aes(
+      x=damage_total,
+      y=attributed_casualities,
+      colour=.pred_cluster
+    )
+  ) +
+  geom_jitter()
+```
+
