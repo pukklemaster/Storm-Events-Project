@@ -156,7 +156,7 @@ model_data_scaled <- model_data %>%
   )
 ```
 
-```{r Elbow Plot for Optimisation}
+```{r Elbow Plot for Optimisation, eval=FALSE}
 # Initialise empty lists
 k_list = list()
 sse_list = list()
