@@ -1,11 +1,9 @@
 ---
 title: "Adam Personal Investigation"
-author: "Adam"
+author: "AdamLaycock"
 date: "`r Sys.Date()`"
 output: html_document
 ---
-
-**Note:** You can use this file as you 'working document' where you can try out various investigation ideas and keep notes about your findings. How you use and structure this file is up to you. It is recommended that you keep notes about what you are investigating and what you find as this will make the process of creating your presentation and report easier. Please note that you _do not_ need to submit this file as part of your group project.
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
@@ -25,7 +23,7 @@ details = read_csv('../Data/details_combined.csv')
 fatalities = read_csv('../Data/fatalities_combined.csv')
 ```
 
-```{r Details Cleaning}
+```{r Data Cleaning}
 # Merge and convert formats of begin-date variables
 details <- details %>%
   # Combine date elements
@@ -91,34 +89,47 @@ details <- details %>%
     DAMAGE_CROPS = as.numeric(gsub("K", "e+03", gsub("M", "e+06", DAMAGE_CROPS)))
   )
 
+# Create a total damage column using crops and property
 details <- details %>%
   mutate(
     DAMAGE_TOTAL = DAMAGE_PROPERTY + DAMAGE_CROPS
   )
 
+# Remove all records pertaining to an incomplete year
 details <- details %>% 
   filter(
     !year(BEGIN_DT) == '2024'
   )
 
+# Use janitor to convert variable names to snakecase
 details <- details %>% 
   clean_names()
-```
 
-```{r Fatalities Cleaning}
+# Tidy the fatalities DataFrame
 fatalities <- fatalities %>% 
-  select(-FAT_TIME, -FATALITY_DATE, -EVENT_YEARMONTH) %>% 
-  mutate(YMD = ymd(paste(FAT_YEARMONTH, FAT_DAY))) %>% 
-  select(-FAT_DAY, -FAT_YEARMONTH)
+  select(
+    -FAT_TIME, -FATALITY_DATE, -EVENT_YEARMONTH
+  ) %>% 
+    mutate(
+      YMD = ymd(paste(FAT_YEARMONTH, FAT_DAY))
+    ) %>% 
+      select(
+        -FAT_DAY, -FAT_YEARMONTH
+      )
 
+# Remove 2024 records
 fatalities <- fatalities %>%
-  filter(!year(YMD) == '2024')
+  filter(
+    !year(YMD) == '2024'
+  )
 
+# Use janitor to convert variables to snakecase
 fatalities <- fatalities %>% 
   clean_names()
 ```
 
-```{r}
+```{r Combined Metrics by Event ID}
+# Create combined metrics by combining direct and indirect
 details <- details %>% 
   mutate(
     attributed_deaths = deaths_direct + deaths_indirect,
@@ -126,7 +137,9 @@ details <- details %>%
     attributed_casualities = attributed_deaths + attributed_injuries
   )
 ```
-```{r}
+
+```{r Feature Selection & Engineering}
+# Select only relevant data and remove rows with NA
 model_data <- details %>% 
   select(
     event_id, attributed_casualities, damage_total, event_type
@@ -135,18 +148,21 @@ model_data <- details %>%
       !is.na(damage_total) & !is.na(attributed_casualities)
     )
 
+# Z-Score normalise the data
 model_data_scaled <- model_data %>%
   mutate(
     damage_total = as.vector(scale(damage_total)),
     attributed_casualities = as.vector(scale(attributed_casualities))
   )
+```
 
-
+```{r Elbow Plot for Optimisation}
+# Initialise empty lists
 k_list = list()
 sse_list = list()
 
-
-for (k in 1:10) {
+# Loop through 1-30 clusters and store total sum of squared error
+for (k in 1:30) {
   kmeans_spec <- k_means(num_clusters = k)
   
   kmeans_fit <- kmeans_spec %>%
@@ -162,11 +178,12 @@ for (k in 1:10) {
   print(paste("Total SSE:", sse))
 }
 
-
+# Convert lists to a DataFrame
 elbow_data <- data.frame(unlist(k_list), unlist(sse_list))
 names(elbow_data) = c("k","total_sse")
 
 
+# Create elboe plot using clustering data
 elbow_data %>% 
   ggplot(
     mapping=aes(
@@ -176,11 +193,16 @@ elbow_data %>%
   ) + 
   geom_line() +
   geom_point() + 
-  scale_x_continuous(breaks = seq(1, 10, by = 1))
+  scale_x_continuous(breaks = seq(1, 30, by = 1)) +
+  labs(
+    title='Total SSE by Number of Clusters', 
+    x='Number of Clusters (k)',
+    y='Total SSE'
+  ) +
+  theme_minimal()
 ```
 
-```{r}
-
+```{r Optimised Model}
 kmeans_spec <- k_means(num_clusters = 3)
 
 kmeans_fit <- kmeans_spec %>%
@@ -190,8 +212,7 @@ model_data_scaled <- kmeans_fit %>%
   augment(model_data_scaled)
 ```
 
-
-```{r}
+```{r Scatter Plot of Scaled Data by Cluster}
 model_data_scaled %>% 
   ggplot(
     mapping=aes(
@@ -200,6 +221,22 @@ model_data_scaled %>%
       colour=.pred_cluster
     )
   ) +
-  geom_jitter()
+  geom_jitter() +
+  labs(
+    x='Scaled Total Damage',
+    y='Scaled Attributed Deaths',
+    title='K-Means Clustering of Casualties & Damages',
+    colour='Cluster'
+  ) +
+  theme_minimal()
 ```
 
+```{r Cluster Frequency Table}
+model_data_scaled %>% 
+  group_by(
+    .pred_cluster
+  ) %>% 
+    summarise(
+      total = n()
+    )
+```
