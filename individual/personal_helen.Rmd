@@ -17,8 +17,8 @@ library(janitor)
 ```
 
 ```{r load-data}
-details = read_csv('Data/details_combined.csv')
-fatalities = read_csv('Data/fatalities_combined.csv')
+details = read_csv('../Data/details_combined.csv')
+fatalities = read_csv('../Data/fatalities_combined.csv')
 ```
 
 ```{r Details Cleaning}
@@ -113,3 +113,41 @@ fatalities <- fatalities %>%
 fatalities <- fatalities %>% 
   clean_names()
 ```
+
+```{r}
+#remove irrelevant variables for ENSO analysis
+details_smaller <- details %>% 
+  select(-region_fips, #I can simplify this, see details cleaning above
+         -cz_type, 
+         -cz_fips, 
+         cz_timezone, 
+         -wfo, 
+         -source, 
+         -tor_other_cz_state, 
+         -tor_other_cz_fips, 
+         -episode_narrative,
+         -event_narrative)
+
+#add a column for ENSO status
+details_enso <- details_smaller %>% 
+  mutate(enso_status = case_when(
+         year(begin_dt) %in% c(1998, 
+                               2003, 
+                               2007, 
+                               2010, 
+                               2016
+                               ) ~ 'el_nino',
+         year(begin_dt) %in% c(1999, 
+                               2000, 
+                               2008, 
+                               2011, 
+                               2012, 
+                               2021, 
+                               2022
+                               ) ~ 'la_nina',
+         TRUE ~ 'neutral'
+  ))
+glimpse(details_enso)
+```
+
+Source = <https://psl.noaa.gov/enso/past_events.html>
