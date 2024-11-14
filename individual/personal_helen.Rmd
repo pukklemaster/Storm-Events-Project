@@ -147,7 +147,10 @@ details_enso <- details_smaller %>%
                                ) ~ 'la_nina',
          TRUE ~ 'neutral'
   ))
-glimpse(details_enso)
+
+details_enso %>% 
+  group_by(enso_status) %>% 
+  summarise(count = n())
 ```
 
 Source = <https://psl.noaa.gov/enso/past_events.html>
