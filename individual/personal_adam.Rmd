@@ -27,7 +27,7 @@ fatalities = read_rds('../data/clean_data/fatalities_clean.rds')
 
 # K-means Clustering Using Casualties & Damage
 
-```{r Combined Metrics by Event ID}
+```{r Combined Metrics by Event ID, eval=FALSE}
 # Create combined metrics by combining direct and indirect
 details <- details %>% 
   mutate(
@@ -37,7 +37,7 @@ details <- details %>%
   )
 ```
 
-```{r Feature Selection & Engineering}
+```{r Feature Selection & Engineering, eval=FALSE}
 # Select only relevant data and remove rows with NA
 model_data <- details %>% 
   select(
@@ -101,7 +101,7 @@ elbow_data %>%
   theme_minimal()
 ```
 
-```{r Optimised Model}
+```{r Optimised Model, eval=FALSE}
 kmeans_spec <- k_means(num_clusters = 3)
 
 kmeans_fit <- kmeans_spec %>%
@@ -111,7 +111,7 @@ model_data_scaled <- kmeans_fit %>%
   augment(model_data_scaled)
 ```
 
-```{r Scatter Plot of Scaled Data by Cluster}
+```{r Scatter Plot of Scaled Data by Cluster, eval=FALSE}
 model_data_scaled %>% 
   ggplot(
     mapping=aes(
@@ -159,7 +159,6 @@ event_data <- details %>%
           rename(
             year = `year(begin_dt)`
           )
-
 ```
 
 ```{r}
@@ -168,27 +167,92 @@ max_range <- event_data %>%
     event_type
   ) %>%
     summarise(
-      range_percentage = max(total) - min(total),
+      range_total = max(total) - min(total),
       .groups = 'drop'
     ) %>%
       slice_max(
-        order_by = range_percentage, 
+        order_by = range_total, 
         n = 5
       ) 
 
 mr_events <- unique(max_range$event_type)
 
-events %>% 
+event_data %>% 
   filter(
     event_type %in% mr_events
+  ) %>% 
+    group_by(
+      event_type
+    ) %>% 
+      mutate(
+        mean_total = mean(total)
+      ) %>% 
+        ggplot(mapping = aes(
+          x = year,
+          y = total,
+          colour = reorder(event_type, desc(mean_total))
+        )) + 
+        geom_smooth(method = 'gam', se = FALSE) +
+        scale_x_continuous(breaks = seq(1996, 2023, by = 2)) +
+        labs(
+          x = 'Year',
+          y = 'Total Events',
+          title = 'Number of Events per Year by Event Type',
+          subtitle = 'Only events with the five largest ranges of events per year are shown',
+          colour = 'Event Type'
+        ) +
+        theme_minimal()
+```
+
+```{r}
+region_data <- details %>%
+  filter(
+    event_type == 'Thunderstorm Wind'
+  ) %>% 
+    select(
+      begin_dt, event_type, region
+    ) %>% 
+      group_by(
+        region, year(begin_dt)
+      ) %>%
+        summarise(
+          total = n()
+        ) %>% 
+          arrange(
+            desc(total)
+          ) %>% 
+            rename(
+              year = `year(begin_dt)`
+            )
+
+max_range <- region_data %>%
+  group_by(
+    region
+  ) %>%
+    summarise(
+      range_total = max(total) - min(total),
+      .groups = 'drop'
+    ) %>%
+      slice_max(
+        order_by = range_total, 
+        n = 3
+      ) 
+
+mr_region <- unique(max_range$region)
+
+region_data %>% 
+  filter(
+    region %in% mr_region
   ) %>% 
     ggplot(
       mapping=aes(
         x=year,
         y=total,
-        colour=event_type
+        colour=region
       )
-    ) + 
-    geom_smooth(method='gam', se=FALSE)
+    ) +
+    geom_smooth(method = 'gam', se = FALSE) +
+    scale_x_continuous(breaks = seq(1996, 2024, by = 2))
+
 ```
 
