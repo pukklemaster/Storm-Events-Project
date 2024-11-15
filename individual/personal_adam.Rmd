@@ -18,6 +18,8 @@ library(tidyclust)
 library(tidymodels)
 ```
 
+# Load & Clean Data
+
 ```{r load-data}
 details = read_csv('../Data/details_combined.csv')
 fatalities = read_csv('../Data/fatalities_combined.csv')
@@ -128,13 +130,15 @@ fatalities <- fatalities %>%
   clean_names()
 ```
 
+# K-means Clustering Using Casualties & Damage
+
 ```{r Combined Metrics by Event ID}
 # Create combined metrics by combining direct and indirect
 details <- details %>% 
   mutate(
     attributed_deaths = deaths_direct + deaths_indirect,
     attributed_injuries = injuries_direct + injuries_indirect,
-    attributed_casualities = attributed_deaths + attributed_injuries
+    attributed_casualties = attributed_deaths + attributed_injuries
   )
 ```
 
@@ -142,17 +146,17 @@ details <- details %>%
 # Select only relevant data and remove rows with NA
 model_data <- details %>% 
   select(
-    event_id, attributed_casualities, damage_total, event_type
+    event_id, attributed_casualties, damage_total, event_type
   ) %>% 
     filter(
-      !is.na(damage_total) & !is.na(attributed_casualities)
+      !is.na(damage_total) & !is.na(attributed_casualties)
     )
 
 # Z-Score normalise the data
 model_data_scaled <- model_data %>%
   mutate(
     damage_total = as.vector(scale(damage_total)),
-    attributed_casualities = as.vector(scale(attributed_casualities))
+    attributed_casualties = as.vector(scale(attributed_casualties))
   )
 ```
 
@@ -166,7 +170,7 @@ for (k in 1:30) {
   kmeans_spec <- k_means(num_clusters = k)
   
   kmeans_fit <- kmeans_spec %>%
-    fit(~ damage_total + attributed_casualities, data = model_data_scaled)
+    fit(~ damage_total + attributed_casualties, data = model_data_scaled)
   
   kmeans_result <- kmeans_fit$fit
   sse <- kmeans_result$tot.withinss
@@ -183,7 +187,7 @@ elbow_data <- data.frame(unlist(k_list), unlist(sse_list))
 names(elbow_data) = c("k","total_sse")
 
 
-# Create elboe plot using clustering data
+# Create elbow plot using clustering data
 elbow_data %>% 
   ggplot(
     mapping=aes(
@@ -206,7 +210,7 @@ elbow_data %>%
 kmeans_spec <- k_means(num_clusters = 3)
 
 kmeans_fit <- kmeans_spec %>%
-  fit(~ damage_total + attributed_casualities, data = model_data_scaled)
+  fit(~ damage_total + attributed_casualties, data = model_data_scaled)
 
 model_data_scaled <- kmeans_fit %>% 
   augment(model_data_scaled)
@@ -217,7 +221,7 @@ model_data_scaled %>%
   ggplot(
     mapping=aes(
       x=damage_total,
-      y=attributed_casualities,
+      y=attributed_casualties,
       colour=.pred_cluster
     )
   ) +
@@ -240,3 +244,56 @@ model_data_scaled %>%
       total = n()
     )
 ```
+
+# Change in Event Types Over Time
+
+```{r}
+event_data <- details %>% 
+  select(
+    begin_dt, event_type
+  ) %>% 
+    group_by(
+      event_type, year(begin_dt)
+    ) %>%
+      summarise(
+        total = n()
+      ) %>% 
+        arrange(
+          desc(total)
+        ) %>% 
+          rename(
+            year = `year(begin_dt)`
+          )
+
+```
+
+```{r}
+max_range <- event_data %>%
+  group_by(
+    event_type
+  ) %>%
+    summarise(
+      range_percentage = max(total) - min(total),
+      .groups = 'drop'
+    ) %>%
+      slice_max(
+        order_by = range_percentage, 
+        n = 5
+      ) 
+
+mr_events <- unique(max_range$event_type)
+
+events %>% 
+  filter(
+    event_type %in% mr_events
+  ) %>% 
+    ggplot(
+      mapping=aes(
+        x=year,
+        y=total,
+        colour=event_type
+      )
+    ) + 
+    geom_smooth(method='gam', se=FALSE)
+```
+

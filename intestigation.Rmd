@@ -126,9 +126,9 @@ cost_data <- details %>%
         Property = sum(damage_property, na.rm=TRUE),
         Crops = sum(damage_crops, na.rm=TRUE)
       ) %>%
-        top_n(
-          20, 
-          Property + Crops
+        slice_max(
+          order_by = Property + Crops, 
+          n = 20
         ) %>% 
           pivot_longer(cols=c('Property', 'Crops'),
                       names_to='type',
