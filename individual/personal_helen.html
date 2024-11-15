@@ -11,7 +11,7 @@
 
 <meta name="author" content />
 
-<meta name="date" content="2024-11-14" />
+<meta name="date" content="2024-11-15" />
 
 <title>Helen Personal Investigation</title>
 
@@ -352,7 +352,7 @@ display: none;
 
 <h1 class="title toc-ignore">Helen Personal Investigation</h1>
 <h4 class="author"></h4>
-<h4 class="date">2024-11-14</h4>
+<h4 class="date">2024-11-15</h4>
 
 </div>
 
@@ -367,125 +367,8 @@ creating your presentation and report easier. Please note that you
 project.</p>
 <pre class="r"><code>library(tidyverse)
 library(janitor)</code></pre>
-<pre class="r"><code>details = read_csv(&#39;../Data/details_combined.csv&#39;)</code></pre>
-<pre><code>## Warning: One or more parsing issues, call `problems()` on your data frame for details,
-## e.g.:
-##   dat &lt;- vroom(...)
-##   problems(dat)</code></pre>
-<pre><code>## Rows: 1679199 Columns: 51
-## ── Column specification ────────────────────────────────────────────────────────
-## Delimiter: &quot;,&quot;
-## chr (25): STATE, MONTH_NAME, EVENT_TYPE, CZ_TYPE, CZ_NAME, WFO, BEGIN_DATE_T...
-## dbl (25): BEGIN_YEARMONTH, BEGIN_DAY, BEGIN_TIME, END_YEARMONTH, END_DAY, EN...
-## lgl  (1): CATEGORY
-## 
-## ℹ Use `spec()` to retrieve the full column specification for this data.
-## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
-<pre class="r"><code>fatalities = read_csv(&#39;../Data/fatalities_combined.csv&#39;)</code></pre>
-<pre><code>## Rows: 21583 Columns: 11
-## ── Column specification ────────────────────────────────────────────────────────
-## Delimiter: &quot;,&quot;
-## chr (4): FATALITY_TYPE, FATALITY_DATE, FATALITY_SEX, FATALITY_LOCATION
-## dbl (7): FAT_YEARMONTH, FAT_DAY, FAT_TIME, FATALITY_ID, EVENT_ID, FATALITY_A...
-## 
-## ℹ Use `spec()` to retrieve the full column specification for this data.
-## ℹ Specify the column types or set `show_col_types = FALSE` to quiet this message.</code></pre>
-<pre class="r"><code># Merge and convert formats of begin-date variables
-details &lt;- details %&gt;%
-  # Combine date elements
-  unite(&quot;BEGIN_DATE&quot;, BEGIN_YEARMONTH, BEGIN_DAY, sep = &quot;&quot;) %&gt;% 
-  mutate(
-    # Convert date to a character for union with time
-    BEGIN_DATE = as.character(BEGIN_DATE),
-    # Add leading zero if the time is 3 digits
-    BEGIN_TIME = case_when(
-      BEGIN_TIME &lt; 1000 ~ sprintf(&quot;%04d&quot;, BEGIN_TIME),
-      TRUE ~ as.character(BEGIN_TIME)
-    )
-  ) %&gt;%
-  # Unite date and time into one string
-  unite(&quot;BEGIN_DT&quot;, BEGIN_DATE, BEGIN_TIME, sep = &quot; &quot;) %&gt;%
-  mutate(
-    # Convert to a datetime
-    BEGIN_DT = ymd_hm(BEGIN_DT)
-  )
-
-# Merge and convert formats of end-date variables
-details &lt;- details %&gt;%
-  # Combine date elements
-  unite(&quot;END_DATE&quot;, END_YEARMONTH, END_DAY, sep = &quot;&quot;) %&gt;% 
-  mutate(
-    # Convert date to a character for union with time
-    END_DATE = as.character(END_DATE),
-    # Add leading zero if the time is 3 digits
-    END_TIME = case_when(
-      END_TIME &lt; 1000 ~ sprintf(&quot;%04d&quot;, END_TIME),
-      TRUE ~ as.character(END_TIME)
-    )
-  ) %&gt;%
-  # Unite date and time into one string
-  unite(&quot;END_DT&quot;, END_DATE, END_TIME, sep = &quot; &quot;) %&gt;%
-  mutate(
-    # Convert to a datetime
-    END_DT = ymd_hm(END_DT)
-  )
-
-# Remove unnecessary columns
-details &lt;- details %&gt;%
-  select(-c(YEAR, MONTH_NAME, BEGIN_DATE_TIME, END_DATE_TIME))
-
-# Rename incorrect column names
-details &lt;- details %&gt;%
-  rename(REGION = STATE,
-         REGION_FIPS = STATE_FIPS)
-
-# Create duration variable 
-details &lt;- details %&gt;% 
-  mutate(
-    duration = END_DT - BEGIN_DT
-  ) %&gt;% 
-    mutate(
-      duration = as.numeric(duration) / 60
-    )
-
-# Change cost suffixes
-details &lt;- details %&gt;% 
-  mutate(
-    DAMAGE_PROPERTY = as.numeric(gsub(&quot;K&quot;, &quot;e+03&quot;, gsub(&quot;M&quot;, &quot;e+06&quot;, DAMAGE_PROPERTY))),
-    DAMAGE_CROPS = as.numeric(gsub(&quot;K&quot;, &quot;e+03&quot;, gsub(&quot;M&quot;, &quot;e+06&quot;, DAMAGE_CROPS)))
-  )</code></pre>
-<pre><code>## Warning: There were 2 warnings in `mutate()`.
-## The first warning was:
-## ℹ In argument: `DAMAGE_PROPERTY = as.numeric(gsub(&quot;K&quot;, &quot;e+03&quot;, gsub(&quot;M&quot;,
-##   &quot;e+06&quot;, DAMAGE_PROPERTY)))`.
-## Caused by warning:
-## ! NAs introduced by coercion
-## ℹ Run `dplyr::last_dplyr_warnings()` to see the 1 remaining warning.</code></pre>
-<pre class="r"><code>details &lt;- details %&gt;%
-  mutate(
-    DAMAGE_TOTAL = DAMAGE_PROPERTY + DAMAGE_CROPS
-  )
-
-details &lt;- details %&gt;% 
-  filter(
-    !year(BEGIN_DT) == &#39;2024&#39;
-  )
-
-details &lt;- details %&gt;% 
-  clean_names()</code></pre>
-<pre class="r"><code>fatalities &lt;- fatalities %&gt;% 
-  select(-FAT_TIME, -FATALITY_DATE, -EVENT_YEARMONTH) %&gt;% 
-  mutate(YMD = ymd(paste(FAT_YEARMONTH, FAT_DAY))) %&gt;% 
-  select(-FAT_DAY, -FAT_YEARMONTH)</code></pre>
-<pre><code>## Warning: There was 1 warning in `mutate()`.
-## ℹ In argument: `YMD = ymd(paste(FAT_YEARMONTH, FAT_DAY))`.
-## Caused by warning:
-## !  12 failed to parse.</code></pre>
-<pre class="r"><code>fatalities &lt;- fatalities %&gt;%
-  filter(!year(YMD) == &#39;2024&#39;)
-
-fatalities &lt;- fatalities %&gt;% 
-  clean_names()</code></pre>
+<pre class="r"><code>details = read_rds(&#39;../data/clean_data/details_clean.rds&#39;)
+fatalities = read_rds(&#39;../data/clean_data/fatalities_clean.rds&#39;)</code></pre>
 <pre class="r"><code>#remove irrelevant variables for ENSO analysis
 details_smaller &lt;- details %&gt;% 
   select(-region_fips, #I can simplify this, see details cleaning above
@@ -496,8 +379,7 @@ details_smaller &lt;- details %&gt;%
          -source, 
          -tor_other_cz_state, 
          -tor_other_cz_fips, 
-         -episode_narrative,
-         -event_narrative)
+        )
 
 #add a column for ENSO status
 details_enso &lt;- details_smaller %&gt;% 
@@ -519,16 +401,20 @@ details_enso &lt;- details_smaller %&gt;%
          TRUE ~ &#39;neutral&#39;
   ))
 
+n_row &lt;- nrow(details_enso)
 details_enso %&gt;% 
   group_by(enso_status) %&gt;% 
-  summarise(count = n())</code></pre>
-<pre><code>## # A tibble: 3 × 2
-##   enso_status  count
-##   &lt;chr&gt;        &lt;int&gt;
-## 1 el_nino     281752
-## 2 la_nina     444449
-## 3 neutral     912023</code></pre>
-<p>Source = <a href="https://psl.noaa.gov/enso/past_events.html" class="uri">https://psl.noaa.gov/enso/past_events.html</a></p>
+  summarise(count = n(),
+            prop = (n()/n_row)
+  )</code></pre>
+<pre><code>## # A tibble: 3 × 3
+##   enso_status  count  prop
+##   &lt;chr&gt;        &lt;int&gt; &lt;dbl&gt;
+## 1 el_nino     281752 0.172
+## 2 la_nina     444449 0.271
+## 3 neutral     912023 0.557</code></pre>
+<p>Source = <a href="https://psl.noaa.gov/enso/past_events.html" class="uri">https://psl.noaa.gov/enso/past_events.html</a> 0.214, 0.25,
+0.536</p>
 
 
 

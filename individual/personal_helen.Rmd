@@ -32,8 +32,7 @@ details_smaller <- details %>%
          -source, 
          -tor_other_cz_state, 
          -tor_other_cz_fips, 
-         -episode_narrative,
-         -event_narrative)
+        )
 
 #add a column for ENSO status
 details_enso <- details_smaller %>% 
@@ -55,9 +54,12 @@ details_enso <- details_smaller %>%
          TRUE ~ 'neutral'
   ))
 
+n_row <- nrow(details_enso)
 details_enso %>% 
   group_by(enso_status) %>% 
-  summarise(count = n())
+  summarise(count = n(),
+            prop = (n()/n_row)
+  )
 ```
 
-Source = <https://psl.noaa.gov/enso/past_events.html>
+Source = <https://psl.noaa.gov/enso/past_events.html> 0.214, 0.25, 0.536
