@@ -41,7 +41,8 @@ details_enso <- details_smaller %>%
                                2003, 
                                2007, 
                                2010, 
-                               2016
+                               2016,
+                               2023
                                ) ~ 'el_nino',
          year(begin_dt) %in% c(1999, 
                                2000, 
@@ -53,16 +54,16 @@ details_enso <- details_smaller %>%
                                ) ~ 'la_nina',
          TRUE ~ 'neutral'
   ))
-#create frequency table of ENSO events
-n_events <- details_enso %>% 
-  group_by(year(begin_dt)) %>% 
-  summarise(n_events = n(event_id))
 
+#create frequency table of ENSO events
 details_enso %>% 
   group_by(enso_status) %>% 
   summarise(count = n(),
-            prop = (n()/n_row)
+            prop = n()/nrow(details_enso),
+            exp_prop = length(unique(year(begin_dt)))
+            /length(unique(year(details_enso$begin_dt)))
   )
 ```
 
-Source = <https://psl.noaa.gov/enso/past_events.html> 0.214, 0.25, 0.536
+Source = <https://psl.noaa.gov/enso/past_events.html> added 2023 as an el nino year
+

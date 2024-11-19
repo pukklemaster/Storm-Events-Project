@@ -11,7 +11,7 @@
 
 <meta name="author" content />
 
-<meta name="date" content="2024-11-15" />
+<meta name="date" content="2024-11-19" />
 
 <title>Helen Personal Investigation</title>
 
@@ -352,7 +352,7 @@ display: none;
 
 <h1 class="title toc-ignore">Helen Personal Investigation</h1>
 <h4 class="author"></h4>
-<h4 class="date">2024-11-15</h4>
+<h4 class="date">2024-11-19</h4>
 
 </div>
 
@@ -371,7 +371,7 @@ library(janitor)</code></pre>
 fatalities = read_rds(&#39;../data/clean_data/fatalities_clean.rds&#39;)</code></pre>
 <pre class="r"><code>#remove irrelevant variables for ENSO analysis
 details_smaller &lt;- details %&gt;% 
-  select(-region_fips, #I can simplify this, see details cleaning above
+  select(-region_fips,
          -cz_type, 
          -cz_fips, 
          cz_timezone, 
@@ -388,7 +388,8 @@ details_enso &lt;- details_smaller %&gt;%
                                2003, 
                                2007, 
                                2010, 
-                               2016
+                               2016,
+                               2023
                                ) ~ &#39;el_nino&#39;,
          year(begin_dt) %in% c(1999, 
                                2000, 
@@ -401,20 +402,22 @@ details_enso &lt;- details_smaller %&gt;%
          TRUE ~ &#39;neutral&#39;
   ))
 
-n_row &lt;- nrow(details_enso)
+#create frequency table of ENSO events
 details_enso %&gt;% 
   group_by(enso_status) %&gt;% 
   summarise(count = n(),
-            prop = (n()/n_row)
+            prop = n()/nrow(details_enso),
+            exp_prop = length(unique(year(begin_dt)))
+            /length(unique(year(details_enso$begin_dt)))
   )</code></pre>
-<pre><code>## # A tibble: 3 × 3
-##   enso_status  count  prop
-##   &lt;chr&gt;        &lt;int&gt; &lt;dbl&gt;
-## 1 el_nino     281752 0.172
-## 2 la_nina     444449 0.271
-## 3 neutral     912023 0.557</code></pre>
-<p>Source = <a href="https://psl.noaa.gov/enso/past_events.html" class="uri">https://psl.noaa.gov/enso/past_events.html</a> 0.214, 0.25,
-0.536</p>
+<pre><code>## # A tibble: 3 × 4
+##   enso_status  count  prop exp_prop
+##   &lt;chr&gt;        &lt;int&gt; &lt;dbl&gt;    &lt;dbl&gt;
+## 1 el_nino     356995 0.218    0.214
+## 2 la_nina     444449 0.271    0.25 
+## 3 neutral     836780 0.511    0.536</code></pre>
+<p>Source = <a href="https://psl.noaa.gov/enso/past_events.html" class="uri">https://psl.noaa.gov/enso/past_events.html</a> added 2023 as
+an el nino year</p>
 
 
 
