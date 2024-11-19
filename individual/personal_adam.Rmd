@@ -130,7 +130,7 @@ model_data_scaled %>%
   theme_minimal()
 ```
 
-```{r Cluster Frequency Table}
+```{r Cluster Frequency Table, eval=FALSE}
 model_data_scaled %>% 
   group_by(
     .pred_cluster
@@ -171,7 +171,7 @@ max_range <- event_data %>%
       .groups = 'drop'
     ) %>%
       slice_max(
-        order_by = range_total, 
+        order_by = abs(range_total), 
         n = 5
       ) 
 
@@ -205,54 +205,42 @@ event_data %>%
 ```
 
 ```{r}
-region_data <- details %>%
-  filter(
-    event_type == 'Thunderstorm Wind'
-  ) %>% 
-    select(
-      begin_dt, event_type, region
+
+get_correlations <- function(event_type) {
+  region_data <- details %>%
+    filter(
+      event_type == event_type
     ) %>% 
-      group_by(
-        region, year(begin_dt)
-      ) %>%
-        summarise(
-          total = n()
-        ) %>% 
-          arrange(
-            desc(total)
+      select(
+        begin_dt, event_type, region
+      ) %>% 
+        group_by(
+          region, year(begin_dt)
+        ) %>%
+          summarise(
+            total = n()
           ) %>% 
-            rename(
-              year = `year(begin_dt)`
-            )
+            arrange(
+              desc(total)
+            ) %>% 
+              rename(
+                year = `year(begin_dt)`
+              )
 
-max_range <- region_data %>%
-  group_by(
-    region
-  ) %>%
-    summarise(
-      range_total = max(total) - min(total),
-      .groups = 'drop'
-    ) %>%
-      slice_max(
-        order_by = range_total, 
-        n = 3
-      ) 
+  correlation_data <- region_data %>% 
+    group_by(
+      region
+    ) %>% 
+      summarise(
+        corr = cor(year, total, method = "pearson")
+      ) %>% 
+        mutate(
+          event_type = event_type
+        )
+  
+    return(correlation_data)
+}
 
-mr_region <- unique(max_range$region)
-
-region_data %>% 
-  filter(
-    region %in% mr_region
-  ) %>% 
-    ggplot(
-      mapping=aes(
-        x=year,
-        y=total,
-        colour=region
-      )
-    ) +
-    geom_smooth(method = 'gam', se = FALSE) +
-    scale_x_continuous(breaks = seq(1996, 2024, by = 2))
-
+test <- get_correlations('Hail')
 ```
 
