@@ -54,8 +54,41 @@ details_enso <- details_smaller %>%
                                ) ~ 'la_nina',
          TRUE ~ 'neutral'
   ))
+```
 
-#create frequency table of ENSO episodes
+```{r}
+el_nino_freq <- details_enso %>% 
+  filter(enso_status == 'el_nino') %>%
+  count(event_type) %>% 
+  mutate(proportion_en = n / sum(n))
+
+la_nina_freq <- details_enso %>% 
+  filter(enso_status == 'la_nina') %>%
+  count(event_type) %>% 
+  mutate(proportion_ln = n / sum(n))
+
+neutral_freq <- details_enso %>% 
+  filter(enso_status == 'neutral') %>%
+  count(event_type) %>% 
+  mutate(proportion_n = n / sum(n))
+
+proportions_enso <- full_join(el_nino_freq, la_nina_freq, by = 'event_type') %>% 
+  full_join(neutral_freq, by='event_type') %>% 
+  top_n(proportion_en, n = 10) %>% 
+  pivot_longer(cols = c(proportion_en, proportion_ln, proportion_n), 
+               names_to = 'enso_status', 
+               values_to = 'proportion'
+               ) %>% 
+  ggplot(aes(fill=enso_status, 
+             x = proportion, 
+             y = reorder(event_type, proportion))
+         ) +
+  geom_col(position = 'dodge')
+proportions_enso
+```
+
+```{r}
+#create frequency table of ENSO events
 details_enso %>% 
   group_by(enso_status) %>% 
   summarise(count = n(),
@@ -65,18 +98,6 @@ details_enso %>%
   )
 ```
 
-Source = <https://psl.noaa.gov/enso/past_events.html> added 2023 as an el nino year, find source for that as well
+Source = <https://psl.noaa.gov/enso/past_events.html> added 2023 as an el nino year, find source for that as well. Note the caveat with events vs episodes
 
-```{r}
-weather_frequencies <- details_enso %>% 
-  select(enso_status, event_type, event_id, begin_dt) %>% 
-  mutate(begin_dt = year(begin_dt))
-
-
-
-weather_frequencies %>% 
-  filter(enso_status == 'el_nino') %>% 
-  group_by(event_type) %>% 
-  summarise(avg_prop = nrow(weather_frequencies))
-```
 
