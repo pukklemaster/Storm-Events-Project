@@ -24,7 +24,7 @@ fatalities = read_rds('../data/clean_data/fatalities_clean.rds')
 ```{r}
 #remove irrelevant variables for ENSO analysis
 details_smaller <- details %>% 
-  select(-region_fips, #I can simplify this, see details cleaning above
+  select(-region_fips,
          -cz_type, 
          -cz_fips, 
          cz_timezone, 
@@ -53,8 +53,11 @@ details_enso <- details_smaller %>%
                                ) ~ 'la_nina',
          TRUE ~ 'neutral'
   ))
+#create frequency table of ENSO events
+n_events <- details_enso %>% 
+  group_by(year(begin_dt)) %>% 
+  summarise(n_events = n(event_id))
 
-n_row <- nrow(details_enso)
 details_enso %>% 
   group_by(enso_status) %>% 
   summarise(count = n(),
