@@ -402,7 +402,7 @@ details_enso &lt;- details_smaller %&gt;%
          TRUE ~ &#39;neutral&#39;
   ))
 
-#create frequency table of ENSO events
+#create frequency table of ENSO episodes
 details_enso %&gt;% 
   group_by(enso_status) %&gt;% 
   summarise(count = n(),
@@ -417,7 +417,31 @@ details_enso %&gt;%
 ## 2 la_nina     444449 0.271    0.25 
 ## 3 neutral     836780 0.511    0.536</code></pre>
 <p>Source = <a href="https://psl.noaa.gov/enso/past_events.html" class="uri">https://psl.noaa.gov/enso/past_events.html</a> added 2023 as
-an el nino year</p>
+an el nino year, find source for that as well</p>
+<pre class="r"><code>weather_frequencies &lt;- details_enso %&gt;% 
+  select(enso_status, event_type, event_id, begin_dt) %&gt;% 
+  mutate(begin_dt = year(begin_dt))
+
+
+
+weather_frequencies %&gt;% 
+  filter(enso_status == &#39;el_nino&#39;) %&gt;% 
+  group_by(event_type) %&gt;% 
+  summarise(avg_prop = nrow(weather_frequencies))</code></pre>
+<pre><code>## # A tibble: 56 × 2
+##    event_type            avg_prop
+##    &lt;chr&gt;                    &lt;int&gt;
+##  1 Astronomical Low Tide  1638224
+##  2 Avalanche              1638224
+##  3 Blizzard               1638224
+##  4 Coastal Flood          1638224
+##  5 Cold/Wind Chill        1638224
+##  6 Debris Flow            1638224
+##  7 Dense Fog              1638224
+##  8 Dense Smoke            1638224
+##  9 Drought                1638224
+## 10 Dust Devil             1638224
+## # ℹ 46 more rows</code></pre>
 
 
 
