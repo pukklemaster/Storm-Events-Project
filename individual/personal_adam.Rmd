@@ -172,7 +172,7 @@ max_range <- event_data %>%
     ) %>%
       slice_max(
         order_by = abs(range_total), 
-        n = 5
+        n = 10
       ) 
 
 mr_events <- unique(max_range$event_type)
@@ -242,5 +242,31 @@ get_correlations <- function(event_type) {
 }
 
 test <- get_correlations('Hail')
+test <- test %>% 
+      mutate(
+        region = tolower(region)
+      )
+             
+usa_map <- map_data("state")     
+             
+full_df <- test %>% 
+  inner_join(usa_map)
+```
+
+```{r}
+library(ggplot2)
+library(maps)
+
+
+# Plot the map
+full_df %>% 
+  ggplot(
+    mapping = aes(
+      x = long, y = lat, group = group, fill = corr, color = "black"
+    )
+  ) +
+  geom_polygon() +
+  labs(title = "Map of the USA") +
+  theme_minimal()
 ```
 
