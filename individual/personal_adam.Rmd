@@ -16,6 +16,7 @@ library(workflows)
 library(parsnip)
 library(tidyclust)
 library(tidymodels)
+library(usmap)
 ```
 
 # Load & Clean Data
@@ -142,7 +143,7 @@ model_data_scaled %>%
 
 # Change in Event Types Over Time
 
-```{r}
+```{r Total Events by Type & Year}
 event_data <- details %>% 
   select(
     begin_dt, event_type
@@ -161,18 +162,18 @@ event_data <- details %>%
           )
 ```
 
-```{r}
+```{r Scaled Largest Changes, eval=FALSE}
 max_range <- event_data %>%
   group_by(
     event_type
   ) %>%
     summarise(
-      range_total = max(total) - min(total),
+      range_total = (max(total) - min(total)) / mean(total),
       .groups = 'drop'
     ) %>%
       slice_max(
         order_by = abs(range_total), 
-        n = 10
+        n = 5
       ) 
 
 mr_events <- unique(max_range$event_type)
@@ -189,7 +190,7 @@ event_data %>%
       ) %>% 
         ggplot(mapping = aes(
           x = year,
-          y = total,
+          y = log(total),
           colour = reorder(event_type, desc(mean_total))
         )) + 
         geom_smooth(method = 'gam', se = FALSE) +
@@ -204,12 +205,15 @@ event_data %>%
         theme_minimal()
 ```
 
-```{r}
+# Geospatial Correlations Between Total Events & Time by Event Type
 
-get_correlations <- function(event_type) {
+```{r Map Correlations Between Number of Events & Time}
+map_correlations <- function(event_type) {
+  event_type_expr <- enquo(event_type)
+  
   region_data <- details %>%
     filter(
-      event_type == event_type
+      event_type == !!event_type_expr
     ) %>% 
       select(
         begin_dt, event_type, region
@@ -227,46 +231,63 @@ get_correlations <- function(event_type) {
                 year = `year(begin_dt)`
               )
 
-  correlation_data <- region_data %>% 
+  correlation_data <- region_data %>%
     group_by(
       region
-    ) %>% 
+    ) %>%
       summarise(
-        corr = cor(year, total, method = "pearson")
-      ) %>% 
+        corr_test = list(tryCatch(
+          cor.test(
+            year, 
+            total, 
+            method = "pearson", 
+            use = "complete.obs"
+          ), 
+          error = function(e) NULL
+        ))
+      ) %>%
         mutate(
-          event_type = event_type
-        )
+          corr = sapply(corr_test, function(test) if (!is.null(test)) test$estimate else NA),
+          p_value = sapply(corr_test, function(test) if (!is.null(test)) test$p.value else NA)
+        ) %>%
+          filter(
+            !is.na(corr) & !is.na(p_value) & p_value <= 0.05
+          ) %>%
+            select(
+              region, corr, p_value
+            ) %>%
+              mutate(
+                event_type = event_type
+              )
   
-    return(correlation_data)
+  map_data <- usmap::us_map(regions = "states")
+  
+  map_data <- map_data %>% 
+    mutate(
+      full = tolower(full)
+    ) %>% 
+      rename(
+        region = full
+      )
+  
+  correlation_data <- correlation_data %>% 
+    mutate(
+      region = tolower(region)
+    )
+  
+  data <- left_join(map_data, correlation_data, by='region')
+  
+  plot_usmap(
+    data=data, 
+    values='corr'
+  ) +
+  scale_fill_continuous(name = "Correlation \nCoefficient") +
+  theme(legend.position = "right") +
+  labs(
+    title=paste('Correlations Between Year & Total Number of', event_type, 'Events'),
+    subtitle = 'Only statistically significant (p<=0.05) correlation coefficients are shown'
+  )
 }
 
-test <- get_correlations('Hail')
-test <- test %>% 
-      mutate(
-        region = tolower(region)
-      )
-             
-usa_map <- map_data("state")     
-             
-full_df <- test %>% 
-  inner_join(usa_map)
+map_correlations('Blizzard')
 ```
-
-```{r}
-library(ggplot2)
-library(maps)
-
-
-# Plot the map
-full_df %>% 
-  ggplot(
-    mapping = aes(
-      x = long, y = lat, group = group, fill = corr, color = "black"
-    )
-  ) +
-  geom_polygon() +
-  labs(title = "Map of the USA") +
-  theme_minimal()
-```
-
