@@ -57,34 +57,54 @@ details_enso <- details_smaller %>%
 ```
 
 ```{r}
+#calculate proportion of total events by event type for el nino years
 el_nino_freq <- details_enso %>% 
   filter(enso_status == 'el_nino') %>%
   count(event_type) %>% 
   mutate(proportion_en = n / sum(n))
 
+#calculate proportion of total events by event type for la nina years
 la_nina_freq <- details_enso %>% 
   filter(enso_status == 'la_nina') %>%
   count(event_type) %>% 
   mutate(proportion_ln = n / sum(n))
 
+#calculate proportion of total events by event type in neutral years
 neutral_freq <- details_enso %>% 
   filter(enso_status == 'neutral') %>%
   count(event_type) %>% 
   mutate(proportion_n = n / sum(n))
 
-proportions_enso <- full_join(el_nino_freq, la_nina_freq, by = 'event_type') %>% 
-  full_join(neutral_freq, by='event_type') %>% 
-  top_n(proportion_en, n = 10) %>% 
+#join previous frequency dataframes into one
+proportions_enso <- full_join(el_nino_freq, neutral_freq, by = 'event_type') %>% 
+  full_join(la_nina_freq, by='event_type') %>% 
+  top_n((abs(proportion_en-proportion_ln)), n = 10) %>% 
   pivot_longer(cols = c(proportion_en, proportion_ln, proportion_n), 
                names_to = 'enso_status', 
                values_to = 'proportion'
-               ) %>% 
+               )
+#reorder ENSO status for plotting
+proportions_enso <- proportions_enso %>%
+  mutate(enso_status = factor(enso_status, levels = c("proportion_en", "proportion_n", "proportion_ln")))
+
+#plot joined dataframe
+proportions_enso %>% 
   ggplot(aes(fill=enso_status, 
              x = proportion, 
              y = reorder(event_type, proportion))
          ) +
-  geom_col(position = 'dodge')
-proportions_enso
+  geom_col(position = 'dodge') +
+  labs(
+    x="Proportion of Total Events in Common ENSO Status Years",
+    y="Event Type",
+    title="Proportion of Total Events by Event Type and ENSO Status",
+    subtitle="Event types with largest difference between El Niño and La Niña years",
+    fill = 'ENSO Status'
+  ) +
+  scale_fill_manual(
+    values = c('proportion_en' = 'midnightblue', 'proportion_n' = 'purple4', 'proportion_ln' = 'mediumorchid2' ),
+    labels = c('El Niño', 'Neutral', 'La Niña')
+  )
 ```
 
 ```{r}
