@@ -20,3 +20,149 @@ library(janitor)
 details = read_rds('../data/clean_data/details_clean.rds')
 fatalities = read_rds('../data/clean_data/fatalities_clean.rds')
 ```
+
+
+```{r filter events}
+severe_details <- details %>%
+  group_by(event_type) %>%
+  summarise(event_damage = sum(damage_total, na.rm = TRUE)) %>%
+  ungroup() %>%
+  arrange(
+    desc(event_damage)
+  ) %>%
+  slice_head(n = 20)
+
+severe_data <- details %>%
+  inner_join(severe_details, by = "event_type") 
+
+head(severe_data)
+
+
+```
+
+```{r view most damaging events}
+severe_details %>%
+  mutate(event_type = fct_reorder(event_type, event_damage)) %>%
+  ggplot(mapping = aes(x = log(event_damage), y = event_type)) + 
+  geom_col() + 
+  labs(x = "total damage($)event type", y = "event type", title = "total damage per event type")
+
+```
+
+```{r joining}
+combined_data <- severe_data %>%
+  full_join(fatalities, by = "event_id")
+```
+
+```{r damage/fatalities}
+combined_data %>%
+  group_by(event_type) %>%
+  mutate(no_fatalities = n()) %>%
+  ggplot(mapping = aes(x = log(damage_total), y = log(no_fatalities), color = event_type)) +
+  geom_point(alpha = 0.7) + 
+  labs(
+    x = "Total Damage ($)",
+    y = "Number of fatalities"
+  )
+```
+
+```{r weather type occurances}
+details %>%
+  mutate(
+    year = year(as.Date(begin_dt))
+  ) %>%
+  filter(
+    event_type %in% c("Flood", "Hail", "High Wind", "Hurricane", "Hurricane(Typhoon)", "Tornado"),
+    year > 2000
+  ) %>%
+  group_by(year, event_type) %>%
+  summarise(
+    total_events = n()
+    ) %>%
+  ggplot(mapping = aes(x = year, y = (total_events), color = factor(event_type))) +
+  geom_point(size = 1) + 
+  geom_smooth(se = FALSE) +
+  facet_wrap(~ event_type,
+             scales = "free") +
+    labs(x = "year", y= "number of weather events", title = "total number of weather events over time",subtitle = "Showing weather types which caused the most damage") 
+
+```
+
+
+
+```{r map test}
+library(ggplot2)
+library(maps)
+
+# Load USA map data
+usa_map <- map_data("state")
+
+# Plot the map
+ggplot(data = usa_map) +
+  geom_polygon(aes(x = long, y = lat, group = group),fill = "lightblue", color = "black") +
+  labs(title = "Map of the USA") +
+  theme_minimal()
+
+#https://eriqande.github.io/rep-res-web/lectures/making-maps-with-R.html
+```
+
+
+```{r maping}
+usa_data <- map_data("state") %>%
+  left_join(combined_data, by = "region") %>%
+  filter(!is.na(damage_total))
+
+ggplot(data = usa_data) +
+  geom_polygon(aes(x = long, y = lat, fill = damage_total, group = group)) +
+  scale_fill_gradient(low = "lightyellow", high = "red", name = "Total Damage") +
+  coord_fixed(1.3) + 
+  labs(title = "Map of the USA") +
+  theme_minimal()
+
+```
+
+```{r ext}
+#
+
+ggplot(data = usa_data, aes(x = long, y = lat, group = group, fill = region)) +
+  geom_polygon(color = "black") +
+  scale_fill_gradient(low = "lightyellow", high = "red", name = "Total Damage") +
+  labs(title = "Total Damage by State") +
+  theme_minimal()
+```
+
+```{r ex}
+#map from website
+usa_data <- map_data("state") %>%
+  left_join(combined_data, by = "region") %>%
+  filter(!is.na(damage_total))
+
+ggplot(data = usa_data) +
+  geom_polygon(aes(x = long, y = lat, fill = region, group = group), color = "white") + coord_fixed(1.3) +
+  guides(fill = "FAlSE")
+```
+
+```{r damage/locations}
+severe_details %>%
+  ggplot() +
+   geom_sf(mapping = aes(fill = damage_total)) +
+   geom_point(aes(x = longitude, y = latitude, size = fatalities, color = event_type)) +
+    labs(title = "Map of Weather Events by Damage and Fatalities")
+
+```
+
+```{r damage over time}
+severe_details %>%
+  mutate(
+    year = year(as.Date(begin_dt))
+  ) %>%
+  filter(
+    year >1990
+  ) %>%
+  ggplot(mapping = aes(x = year, y = damage_total, color = factor(event_type))) +
+  geom_point(size = 1) +
+  geom_smooth(se = FALSE) + 
+  facet_wrap(~event_type) + 
+  labs(
+    x = "year", y = "total damage ($)")
+```
