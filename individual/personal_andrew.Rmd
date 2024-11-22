@@ -23,6 +23,134 @@ fatalities = read_rds('../data/clean_data/fatalities_clean.rds')
 
 fatalities %>%
   ggplot(mapping = aes(x = fatality_age)) +
-    geom_histogram(binwidth = 4)
+    geom_histogram(binwidth = 4) #shows how many people from 4 year age groups have passed from weather events
+
+
 
 ```
+
+```{r median age group}
+
+median_fatality <- filter(fatalities, fatality_age < 70 & fatality_age > 13)
+  
+events<- details %>% select(event_id, event_type)
+
+right_join(events, median_fatality) %>%
+  group_by(event_type) %>%
+  count(event_type) %>%
+  na.omit %>%
+  arrange(desc(n)) # most fatal weather events for 14 - 69 year olds
+
+
+```
+
+```{r seperate weather events}
+
+#seperating events into categories
+# Marine - water related events or events relating to bodies of water
+# snow/ice - events related to cold or winter weather
+# Atmospheric - electric storms and other atmospheric events
+# Tropical - tropical weather events, hurricanes etc
+# heat/temp - events relating towards high temperatures or fire
+# rain - rain and hail
+events <-events %>% 
+  mutate(weather_cat = case_when(
+    event_type == "Astronomical Low Tide" ~ "Marine",
+    event_type == "Coastal Flood" ~ "Marine",
+    event_type == "Debris Flow" ~ "Marine",
+    event_type == "Flash Flood" ~ "Marine",
+    event_type == "Flood" ~ "Marine",
+    event_type == "High Surf" ~ "Marine",
+    event_type == "Lake-Effect Snow" ~ "Marine",
+    event_type == "Lakeshore Flood" ~ "Marine",
+    event_type == "Marine Hail" ~ "Marine",
+    event_type == "Marine High Wind" ~ "Marine",
+    event_type == "Marine Strong Wind" ~ "Marine",
+    event_type == "Marine Thunderstorm Wind" ~ "Marine",
+    event_type == "Rip Current" ~ "Marine",
+    event_type == "Seiche" ~ "Marine",
+    event_type == "Storm Surge/Tide" ~ "Marine",
+    event_type == "Tsunami" ~ "Marine",
+    event_type == "Waterspout" ~ "Marine",
+    event_type == "Sneakerwave" ~ "Marine",
+    event_type == "Marine Lightning" ~ "Marine",
+    event_type == "Marine Tropical Depression" ~ "Marine",
+    event_type == ("Marine Hurricane/Typhoon") ~ "Marine",
+    event_type == "Marine Dense Fog" ~ "Marine",
+    event_type == "Avalanche" ~ "Ice/Snow",
+    event_type == "Blizzard" ~ "Ice/Snow",
+    event_type == "Cold/Wind Chill" ~ "Ice/Snow",
+    event_type == "Extreme Cold/Wind Chill" ~ "Ice/Snow",
+    event_type == "Frost/Freeze" ~ "Ice/Snow",
+    event_type == "Ice Storm" ~ "Ice/Snow",
+    event_type == "Heavy Snow" ~ "Ice/Snow",
+    event_type == "Sleet" ~ "Ice/Snow",
+    event_type == "Winter Storm" ~ "Ice/Snow",
+    event_type == "Winter Weather" ~ "Ice/Snow",
+    event_type == "Dense Fog" ~ "Atmospheric",
+    event_type == "Dense Smoke" ~ "Atmospheric",
+    event_type == "Freezing Fog" ~ "Atmospheric",
+    event_type == "Funnel Cloud" ~ "Atmospheric",
+    event_type == "High Wind" ~ "Atmospheric",
+    event_type == "Lightning" ~ "Atmospheric",
+    event_type == "Strong Wind" ~ "Atmospheric",
+    event_type == "Northern Lights" ~ "Atmospheric",
+    event_type == "Thunderstorm Wind" ~ "Atmospheric",
+    event_type == "Tornado" ~ "Atmospheric",
+    event_type == "Dust Devil" ~ "Atmospheric",
+    event_type == "Dust Storm" ~ "Atmospheric",
+    event_type == "Hurricane (Typhoon)" ~ "Tropical",
+    event_type == "Hurricane" ~ "Tropical",
+    event_type == "Tropical Depression" ~ "Tropical",
+    event_type == "Tropical Storm" ~ "Tropical",
+    event_type == "Heat" ~ "Fire/HiTemps",
+    event_type == "Excessive Heat" ~ "Fire/HiTemps",
+    event_type == "Volcanic Ash" ~ "Fire/HiTemps",
+    event_type == "Volcanic Ashfall" ~ "Fire/HiTemps",
+    event_type == "Drought" ~ "Fire/HiTemps",
+    event_type == "Wildfire" ~ "Fire/HiTemps",
+    TRUE ~ "Rain"
+  ))
+
+
+```
+
+```{r old age group}
+
+elderly_fatality <- filter(fatalities, fatality_age >= 70) %>%
+  select(event_id)
+  
+elderly_fatality <- right_join(events, elderly_fatality)
+
+
+elderly_fatality %>%
+  group_by(weather_cat) %>%
+  count() %>%
+  na.omit()%>%
+  arrange(desc(n))
+
+elderly_fatality %>%
+  group_by(event_type) %>%
+  count() %>%
+  na.omit()%>%
+  arrange(desc(n))
+
+```
+
+```{r young age group}
+
+young_fatality <- filter(fatalities, fatality_age <= 13) %>%
+  select(event_id)
+  
+young_fatality <- right_join(events, young_fatality)
+
+young_fatality %>%
+  group_by(event_type) %>%
+  count(event_type) %>%
+  na.omit() %>%
+  arrange(desc(n))
+
+
+
+```
+
