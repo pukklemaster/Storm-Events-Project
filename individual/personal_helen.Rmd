@@ -102,7 +102,7 @@ proportions_enso %>%
     fill = 'ENSO Status'
   ) +
   scale_fill_manual(
-    values = c('proportion_en' = 'midnightblue', 'proportion_n' = 'purple4', 'proportion_ln' = 'mediumorchid2' ),
+    values = c('proportion_en' = 'midnightblue', 'proportion_n' = 'purple2', 'proportion_ln' = 'mediumorchid2' ),
     labels = c('El Niño', 'Neutral', 'La Niña')
   )
 ```
