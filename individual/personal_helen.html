@@ -456,26 +456,37 @@ enso_knn &lt;- details_enso %&gt;%
   select(event_id, 
          region, 
          event_type, 
-         injuries_direct, 
-         injuries_indirect, 
+         injuries_direct,
          deaths_direct, 
-         deaths_indirect, 
          damage_property, 
-         damage_crops, 
-         damage_total, 
+         damage_crops,
          enso_status
          )
+
 #train/test split
 set.seed(70405)
-enso_knn_split &lt;- initial_split(enso_knn)
-enso_knn_train &lt;- training(enso_knn_split)
-enso_knn_test  &lt;- testing(enso_knn_split)
+enso_split &lt;- initial_split(enso_knn)
+enso_train &lt;- training(enso_split)
+enso_test  &lt;- testing(enso_split)
 
-enso_knn_recipe &lt;- recipe(enso_status ~ ., 
+enso_recipe_1 &lt;- recipe(enso_status ~ ., 
                       data = enso_knn
                       ) %&gt;% 
   step_naomit(all_predictors()) %&gt;% #ensure no predictors are missing
-  step_dummy(all_nominal(), -all_outcomes()) #create dummy variables</code></pre>
+  step_dummy(all_nominal(), -all_outcomes()) #create dummy variables
+
+#choose a model
+enso_mod_1 &lt;- nearest_neighbor(engine=&#39;kknn&#39;, mode = &#39;classification&#39;)
+
+#initiate workflow, add model and recipe
+enso_wflow_1 &lt;- workflow() %&gt;% 
+  add_model(enso_mod_1) %&gt;% 
+  add_recipe(enso_recipe_1)
+
+#fit the model on the training data
+enso_fit_1 &lt;- enso_wflow_1 %&gt;% 
+  fit(data = enso_train)
+tidy(enso_fit_1)</code></pre>
 <pre class="r"><code>#create frequency table of ENSO events
 details_enso %&gt;% 
   group_by(enso_status) %&gt;% 

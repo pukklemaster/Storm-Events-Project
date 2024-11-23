@@ -114,26 +114,37 @@ enso_knn <- details_enso %>%
   select(event_id, 
          region, 
          event_type, 
-         injuries_direct, 
-         injuries_indirect, 
+         injuries_direct,
          deaths_direct, 
-         deaths_indirect, 
          damage_property, 
-         damage_crops, 
-         damage_total, 
+         damage_crops,
          enso_status
          )
+
 #train/test split
 set.seed(70405)
-enso_knn_split <- initial_split(enso_knn)
-enso_knn_train <- training(enso_knn_split)
-enso_knn_test  <- testing(enso_knn_split)
+enso_split <- initial_split(enso_knn)
+enso_train <- training(enso_split)
+enso_test  <- testing(enso_split)
 
-enso_knn_recipe <- recipe(enso_status ~ ., 
+enso_recipe_1 <- recipe(enso_status ~ ., 
                       data = enso_knn
                       ) %>% 
   step_naomit(all_predictors()) %>% #ensure no predictors are missing
   step_dummy(all_nominal(), -all_outcomes()) #create dummy variables
+
+#choose a model
+enso_mod_1 <- nearest_neighbor(engine='kknn', mode = 'classification')
+
+#initiate workflow, add model and recipe
+enso_wflow_1 <- workflow() %>% 
+  add_model(enso_mod_1) %>% 
+  add_recipe(enso_recipe_1)
+
+#fit the model on the training data
+enso_fit_1 <- enso_wflow_1 %>% 
+  fit(data = enso_train)
+tidy(enso_fit_1)
 ```
 
 
