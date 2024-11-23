@@ -27,6 +27,103 @@ details = read_rds('../data/clean_data/details_clean.rds')
 fatalities = read_rds('../data/clean_data/fatalities_clean.rds')
 ```
 
+# Damage by Event Type
+
+```{r}
+cost_data <- details %>% 
+  select(
+    event_type, damage_property, damage_crops
+  ) %>% 
+    group_by(
+      event_type
+    ) %>% 
+      summarise(
+        Property = sum(damage_property, na.rm=TRUE),
+        Crops = sum(damage_crops, na.rm=TRUE)
+      ) %>%
+        slice_max(
+          order_by = Property + Crops, 
+          n = 20
+        ) %>% 
+          pivot_longer(cols=c('Property', 'Crops'),
+                      names_to='type',
+                      values_to='damage'
+          )
+
+damage_plot <- cost_data %>% 
+  ggplot(
+    mapping=aes(
+      x=damage/sum(damage)*100,
+      y=reorder(event_type, damage),
+      fill=type
+    )
+  ) +
+  geom_col() +
+  labs(title = 'Damage by Storm Event Type between 1996 & 2023', 
+       subtitle = 'Total Damage (Property + Crops) was $227bn',
+       y = 'Type of Event',
+       x = 'Pecentage of Total Damage',
+       fill='Damage Type',
+       caption='Only the 20 most damaging event types are shown.'
+  ) +
+  theme_minimal() +
+  theme(plot.caption = element_text(hjust = -0.75, face= "italic"))
+
+#ggsave('plots/Damage by Event Type.jpg', plot=damage_plot)
+```
+
+# Simple Statistics Function 
+
+```{r Simple Damage Statistics}
+eval_percentage_criteria <- function(col, type) {
+  col <- sym(col)
+  
+  if (type == 'event') {
+    total <- details %>% 
+      nrow()
+  
+    criteria_total <- details %>% 
+      filter(
+        !!col > 0
+      ) %>%
+        nrow()
+    
+    print('Percentage fulfilling criteria by event: ')
+    print(criteria_total / total * 100)
+  }
+  
+  else if (type == 'episode') {
+    total <- details %>% 
+      group_by(
+        episode_id
+      ) %>% 
+        summarise(
+          total = sum(!!col)
+        ) %>% 
+          nrow()
+    
+    criteria_total <- details %>% 
+      group_by(
+        episode_id
+      ) %>% 
+        summarise(
+          total = sum(!!col)
+        ) %>% 
+          filter(
+            total > 0
+          ) %>%
+            nrow()
+    
+    print('Percentage fulfilling criteria by episode: ')
+    print(criteria_total / total * 100)
+  }
+    
+  else {
+    stop("Type must be one of 'event' or 'episode'")
+  }
+}
+```
+
 # K-means Clustering Using Casualties & Damage
 
 ```{r Combined Metrics by Event ID}
