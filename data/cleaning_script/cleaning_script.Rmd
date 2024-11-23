@@ -129,7 +129,15 @@ fatalities <- fatalities %>%
 fatalities <- fatalities %>% 
   clean_names()
 
-write_rds(details, "../clean_data/details_clean.rds")
+details <- details %>%
+  mutate(
+    event_type = recode(
+      event_type,
+      "Hurricane (Typhoon)" = "Hurricane"
+    )
+  )
+
+write_rds(details, "../clean_data/details_clean.rds", compress = "gz")
 write_rds(fatalities, "../clean_data/fatalities_clean.rds")
 ```
 

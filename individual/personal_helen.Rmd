@@ -13,6 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r load-lib, message = FALSE}
 library(tidyverse)
+library(tidymodels)
 library(janitor)
 ```
 
@@ -102,20 +103,57 @@ proportions_enso %>%
     fill = 'ENSO Status'
   ) +
   scale_fill_manual(
-    values = c('proportion_en' = 'midnightblue', 'proportion_n' = 'purple4', 'proportion_ln' = 'mediumorchid2' ),
+    values = c('proportion_en' = 'midnightblue', 'proportion_n' = 'purple2', 'proportion_ln' = 'mediumorchid2' ),
     labels = c('El Niño', 'Neutral', 'La Niña')
   )
 ```
 
-```{r}
-#create frequency table of ENSO events
-details_enso %>% 
-  group_by(enso_status) %>% 
-  summarise(count = n(),
-            prop = n()/nrow(details_enso),
-            exp_prop = length(unique(year(begin_dt)))
-            /length(unique(year(details_enso$begin_dt)))
-  )
+```{r, eval=FALSE}
+#tears of sadness
+enso_knn <- details_enso %>% 
+  select(event_id, 
+         region, 
+         event_type, 
+         injuries_direct,
+         deaths_direct, 
+         damage_property, 
+         damage_crops,
+         enso_status
+         )
+enso_knn <- enso_knn %>% 
+  sample_n(50000)
+
+#train/test split
+set.seed(70405)
+enso_split <- initial_split(enso_knn)
+enso_train <- training(enso_split)
+enso_test  <- testing(enso_split)
+
+enso_recipe_1 <- recipe(enso_status ~ ., 
+                      data = enso_knn
+                      ) %>% 
+  #step_naomit(all_predictors()) %>% #ensure no predictors are missing
+  step_novel(all_nominal(), -all_outcomes()) %>%
+  step_dummy(all_nominal(), -all_outcomes()) #create dummy variables
+
+#choose a model
+enso_mod_1 <- nearest_neighbor(engine='kknn', mode = 'classification')
+
+#initiate workflow, add model and recipe
+enso_wflow_1 <- workflow() %>% 
+  add_model(enso_mod_1) %>% 
+  add_recipe(enso_recipe_1)
+
+#fit the model on the training data
+enso_fit_1 <- enso_wflow_1 %>% 
+  fit(data = enso_train)
+
+#generate predictions for the test data
+enso_test <- bake(prep(enso_recipe_1), new_data = enso_test)
+#bake applies the recipe to the test data to process it the same way as train
+enso_pred_1 <- predict(enso_fit_1, enso_test, type = 'prob') %>% 
+  bind_cols(enso_test)
+enso_pred_1
 ```
 
 Source = <https://psl.noaa.gov/enso/past_events.html> added 2023 as an el nino year, find source for that as well. Note the caveat with events vs episodes

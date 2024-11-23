@@ -2,6 +2,17 @@
 
 This is a template repository for your group project. One of your group members should clone this repository and add the other team members as collaborators. You should also add the `uoeIDS` course GitHub account as a collaborator.
 
+## Team members
+
+Liv, Max, Sarah, Helen, Andrew, & Adam
+
+- Olivia Harris (s2286331) oliviaharris1
+- Maxwell Pohlmann (s2641522) MaxwellPohlman
+- Sarah Steward (s2675691) sarahstewart
+- Helen Miller (s2494538) hellenrmiller
+- Andrew Morris (s2522724) pukklemaster
+- Adam Laycock (s2531549) adamlaycock
+
 ## Repository structure
 
 - `/data` -- Save any data you are using for your project in this folder.

@@ -17,6 +17,7 @@ library(parsnip)
 library(tidyclust)
 library(tidymodels)
 library(usmap)
+library(gghighlight)
 ```
 
 # Load & Clean Data
@@ -26,9 +27,106 @@ details = read_rds('../data/clean_data/details_clean.rds')
 fatalities = read_rds('../data/clean_data/fatalities_clean.rds')
 ```
 
+# Damage by Event Type
+
+```{r}
+cost_data <- details %>% 
+  select(
+    event_type, damage_property, damage_crops
+  ) %>% 
+    group_by(
+      event_type
+    ) %>% 
+      summarise(
+        Property = sum(damage_property, na.rm=TRUE),
+        Crops = sum(damage_crops, na.rm=TRUE)
+      ) %>%
+        slice_max(
+          order_by = Property + Crops, 
+          n = 20
+        ) %>% 
+          pivot_longer(cols=c('Property', 'Crops'),
+                      names_to='type',
+                      values_to='damage'
+          )
+
+damage_plot <- cost_data %>% 
+  ggplot(
+    mapping=aes(
+      x=damage/sum(damage)*100,
+      y=reorder(event_type, damage),
+      fill=type
+    )
+  ) +
+  geom_col() +
+  labs(title = 'Damage by Storm Event Type between 1996 & 2023', 
+       subtitle = 'Total Damage (Property + Crops) was $227bn',
+       y = 'Type of Event',
+       x = 'Pecentage of Total Damage',
+       fill='Damage Type',
+       caption='Only the 20 most damaging event types are shown.'
+  ) +
+  theme_minimal() +
+  theme(plot.caption = element_text(hjust = -0.75, face= "italic"))
+
+#ggsave('plots/Damage by Event Type.jpg', plot=damage_plot)
+```
+
+# Simple Statistics Function 
+
+```{r Simple Damage Statistics}
+eval_percentage_criteria <- function(col, type) {
+  col <- sym(col)
+  
+  if (type == 'event') {
+    total <- details %>% 
+      nrow()
+  
+    criteria_total <- details %>% 
+      filter(
+        !!col > 0
+      ) %>%
+        nrow()
+    
+    print('Percentage fulfilling criteria by event: ')
+    print(criteria_total / total * 100)
+  }
+  
+  else if (type == 'episode') {
+    total <- details %>% 
+      group_by(
+        episode_id
+      ) %>% 
+        summarise(
+          total = sum(!!col)
+        ) %>% 
+          nrow()
+    
+    criteria_total <- details %>% 
+      group_by(
+        episode_id
+      ) %>% 
+        summarise(
+          total = sum(!!col)
+        ) %>% 
+          filter(
+            total > 0
+          ) %>%
+            nrow()
+    
+    print('Percentage fulfilling criteria by episode: ')
+    print(criteria_total / total * 100)
+  }
+    
+  else {
+    stop("Type must be one of 'event' or 'episode'")
+  }
+}
+```
+
 # K-means Clustering Using Casualties & Damage
 
-```{r Combined Metrics by Event ID, eval=FALSE}
+```{r Combined Metrics by Event ID}
 # Create combined metrics by combining direct and indirect
 details <- details %>% 
   mutate(
@@ -38,7 +136,7 @@ details <- details %>%
   )
 ```
 
-```{r Feature Selection & Engineering, eval=FALSE}
+```{r Feature Selection & Engineering}
 # Select only relevant data and remove rows with NA
 model_data <- details %>% 
   select(
@@ -102,7 +200,7 @@ elbow_data %>%
   theme_minimal()
 ```
 
-```{r Optimised Model, eval=FALSE}
+```{r Optimised Model}
 kmeans_spec <- k_means(num_clusters = 3)
 
 kmeans_fit <- kmeans_spec %>%
@@ -112,26 +210,27 @@ model_data_scaled <- kmeans_fit %>%
   augment(model_data_scaled)
 ```
 
-```{r Scatter Plot of Scaled Data by Cluster, eval=FALSE}
-model_data_scaled %>% 
-  ggplot(
-    mapping=aes(
-      x=damage_total,
-      y=attributed_casualties,
-      colour=.pred_cluster
-    )
-  ) +
-  geom_jitter() +
-  labs(
-    x='Scaled Total Damage',
-    y='Scaled Attributed Deaths',
-    title='K-Means Clustering of Casualties & Damages',
-    colour='Cluster'
-  ) +
-  theme_minimal()
+```{r Scatter Plot of Scaled Data by Cluster}
+model_data_scaled %>%
+  ungroup() %>% 
+    ggplot(
+      mapping=aes(
+        x=damage_total,
+        y=attributed_casualties,
+        colour=.pred_cluster
+      )
+    ) +
+    geom_jitter() +
+    labs(
+      x='Scaled Total Damage',
+      y='Scaled Attributed Deaths',
+      title='K-Means Clustering of Casualties & Damages',
+      colour='Cluster'
+    ) +
+    theme_minimal()
 ```
 
-```{r Cluster Frequency Table, eval=FALSE}
+```{r Cluster Frequency Table}
 model_data_scaled %>% 
   group_by(
     .pred_cluster
@@ -211,6 +310,20 @@ event_data %>%
 map_correlations <- function(event_type) {
   event_type_expr <- enquo(event_type)
   
+total_region_data <- details %>%
+  select(
+    begin_dt, event_type, region
+  ) %>% 
+    group_by(
+      region, year(begin_dt)
+    ) %>%
+      summarise(
+        ov_total = n()
+      ) %>% 
+        rename(
+          year = `year(begin_dt)`
+        )
+
   region_data <- details %>%
     filter(
       event_type == !!event_type_expr
@@ -229,7 +342,13 @@ map_correlations <- function(event_type) {
             ) %>% 
               rename(
                 year = `year(begin_dt)`
-              )
+              ) %>% 
+                inner_join(
+                  total_region_data, by=c('region', 'year')
+                ) %>% 
+                  mutate(
+                    prop = total / ov_total
+                  )
 
   correlation_data <- region_data %>%
     group_by(
@@ -239,7 +358,7 @@ map_correlations <- function(event_type) {
         corr_test = list(tryCatch(
           cor.test(
             year, 
-            total, 
+            prop, 
             method = "pearson", 
             use = "complete.obs"
           ), 
@@ -284,10 +403,12 @@ map_correlations <- function(event_type) {
   scale_fill_continuous(name = "Correlation \nCoefficient") +
   theme(legend.position = "right") +
   labs(
-    title=paste('Correlations Between Year & Total Number of', event_type, 'Events'),
+    title=paste('Correlations Between Year &', event_type, 'Events as a Proportion of Total State Events'
+          ),
     subtitle = 'Only statistically significant (p<=0.05) correlation coefficients are shown'
   )
 }
 
-map_correlations('Blizzard')
+map_correlations('Flash Flood')
 ```
+
