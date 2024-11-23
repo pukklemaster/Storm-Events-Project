@@ -25,29 +25,15 @@ fatalities = read_rds('../data/clean_data/fatalities_clean.rds')
 
 ```{r filter events}
 severe_details <- details %>%
-  select(-c(episode_id, wfo, source, region_fips, end_dt, region_fips, cz_type, cz_fips, cz_name, cz_timezone, injuries_direct, injuries_indirect, deaths_direct, deaths_indirect, flood_cause, category, tor_f_scale, tor_length, tor_width, tor_other_wfo, tor_other_cz_state, tor_other_cz_fips, tor_other_cz_name, begin_azimuth, end_azimuth, begin_lon, begin_lat, end_lon, end_lat, duration, magnitude_type, begin_range, begin_location, end_range)) 
-
-severe_details_recent <- severe_details %>%
+  select(-c(episode_id, wfo, source, region_fips, end_dt, region_fips, cz_type, cz_fips, cz_name, cz_timezone, injuries_direct, injuries_indirect, deaths_direct, deaths_indirect, flood_cause, category, tor_f_scale, tor_length, tor_width, tor_other_wfo, tor_other_cz_state, tor_other_cz_fips, tor_other_cz_name, begin_azimuth, end_azimuth, begin_lon, begin_lat, end_lon, end_lat, duration, magnitude_type, begin_range, begin_location, end_range)) %>%
   group_by(event_type) %>%
-  mutate(sum_damage_total = sum(damage_total, na.rm = TRUE),
-         year = year(as.Date(begin_dt))) %>%
+  mutate(sum_damage_total = sum(damage_total, na.rm = TRUE)) %>%
   ungroup() %>%
   arrange(
     desc(sum_damage_total),
-    desc(year)
   ) %>%
   distinct(event_type, .keep_all = TRUE) 
-
-severe_details_old <- severe_details %>%
-  group_by(event_type) %>%
-  mutate(sum_damage_total = sum(damage_total, na.rm = TRUE),
-         year = year(as.Date(begin_dt))) %>%
-  ungroup() %>%
-  arrange(
-    desc(sum_damage_total),
-    year
-  ) %>%
-  distinct(event_type, .keep_all = TRUE) 
+severe_details
 
 severe_details_recent
 
@@ -55,11 +41,9 @@ severe_details_recent
 
 
 ```{r joining}
-combined_data_now <- severe_details_recent %>%
+combined_data <- severe_details %>%
   full_join(fatalities, by = "event_id")
 
-combined_data_old <- severe_details_old%>%
-  full_join(fatalities, by = "event_id")
 ```
 
 
@@ -76,13 +60,109 @@ details %>%
 
 ```
 
+```{r no fatalities per region}
+fatalities_by_region <-combined_data%>%
+  group_by(region) %>%
+  summarize(
+    no_fatalities = n_distinct(fatality_id)) %>%
+  mutate(no_fatalities = no_fatalities) %>%
+  ungroup()
+
+total_fatalities <- combined_data %>%
+  summarize(total_fatalities = n_distinct(fatality_id)) %>%
+  pull(total_fatalities)
+  
+fatalities_by_region <- fatalities_by_region %>%
+  mutate(total_fatalities= total_fatalities)
+
+combined_data <- combined_data %>%
+  left_join(fatalities_by_region, by="region")
+
+```
+
+
+
+```{r fatalities frequency map}
+
+combined_data <- combined_data %>% 
+  mutate(region = tolower(region))
+
+fatalities_by_region <- fatalities_by_region %>%
+  mutate(region = tolower(region))
+
+fatalities_by_region
+             
+usa_map <- map_data("state")
+             
+map_combined <- usa_map %>% 
+  left_join(fatalities_by_region, by = "region") 
+
+
+map_combined %>% 
+  ggplot(
+    mapping = aes(
+      x = long, y = lat, group = group, fill = no_fatalities, color = "black"
+    )
+  ) +
+  geom_polygon() +
+  scale_fill_gradient(low = "yellow", high = "red") + 
+  labs(title = "Map of the USA") +
+  theme_minimal()
+```
+```{r frequency events}
+frequency_by_region <-combined_data%>%
+  group_by(region) %>%
+  summarize(
+    no_events = n_distinct(event_id)) %>%
+  mutate(no_events = no_events) %>%
+  ungroup()
+
+total_events <- combined_data %>%
+  summarize(total_events = n_distinct(event_id)) %>%
+  pull(total_events)
+  
+frequency_by_region <- frequency_by_region %>%
+  mutate(total_events= total_events)
+
+combined_data <- combined_data %>%
+  left_join(frequency_by_region, by="region")
+
+```
+
+```{r event frequency map}
+
+combined_data <- combined_data %>% 
+  mutate(region = tolower(region))
+
+frequency_by_region <- frequency_by_region %>%
+  mutate(region = tolower(region))
+
+             
+usa_map <- map_data("state")
+             
+map_combined <- usa_map %>% 
+  left_join(frequency_by_region, by = "region") 
+
+
+map_combined %>% 
+  ggplot(
+    mapping = aes(
+      x = long, y = lat, group = group, fill = no_events, color = "black"
+    )
+  ) +
+  geom_polygon() +
+  scale_fill_gradient(low = "yellow", high = "red") + 
+  labs(title = "Map of the USA") +
+  theme_minimal()
+```
+
 
 ```{r map damage}
 library(ggplot2)
 library(maps)
 
 #load map data
-combined_data_now <- combined_data_now %>% 
+combined_data <- combined_data %>% 
       mutate(region = tolower(region))
              
 usa_map <- map_data("state")     
@@ -94,10 +174,10 @@ map_combined_now <- combined_data_now %>%
 map_combined_now %>% 
   ggplot(
     mapping = aes(
-      x = long, y = lat, group = group, fill = log(sum_damage_total), color = "black"
+      x = long, y = lat, group = group, fill = log(sum_damage_total)
     )
   ) +
-  geom_polygon() +
+  geom_polygon(colour='black') +
   scale_fill_gradient(low = "yellow", high = "red") + 
   labs(title = "Map of the USA") +
   theme_minimal()
@@ -105,42 +185,6 @@ map_combined_now %>%
 #https://eriqande.github.io/rep-res-web/lectures/making-maps-with-R.html
 ```
 
-```{r overtime}
-
-combined_data_old <- combined_data_old %>% 
-      mutate(region = tolower(region))
-             
-usa_map <- map_data("state")     
-
-map_combined_old <- combined_data_old %>% 
-  full_join(usa_map)
-
-
-map_combined_old %>% 
-  ggplot(
-    mapping = aes(
-      x = long, y = lat, group = group, fill = log(damage_total), color = "black"
-    )
-  ) +
-  geom_polygon() +
-  scale_fill_gradient(low = "yellow", high = "red") + 
-  labs(title = "Map of the USA") +
-  theme_minimal()
-```
-
-
-```{r map magnitude}
-map_combined %>% 
-  ggplot(
-    mapping = aes(
-      x = long, y = lat, group = group, fill = magnitude),
-  ) +
-  geom_polygon() +
-  scale_fill_gradient(low = "lightblue", high = "darkblue")
-  labs(title = "Map of the USA") +
-  theme_minimal()
-
-```
 
 ```{r damage over time2} 
 overtime_severe_details <- severe_details %>%
