@@ -13,6 +13,7 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ```{r load-lib, message = FALSE}
 library(tidyverse)
+library(tidymodels)
 library(janitor)
 ```
 
@@ -106,6 +107,35 @@ proportions_enso %>%
     labels = c('El Niño', 'Neutral', 'La Niña')
   )
 ```
+
+```{r, eval=FALSE}
+#tears of sadness
+enso_knn <- details_enso %>% 
+  select(event_id, 
+         region, 
+         event_type, 
+         injuries_direct, 
+         injuries_indirect, 
+         deaths_direct, 
+         deaths_indirect, 
+         damage_property, 
+         damage_crops, 
+         damage_total, 
+         enso_status
+         )
+#train/test split
+set.seed(70405)
+enso_knn_split <- initial_split(enso_knn)
+enso_knn_train <- training(enso_knn_split)
+enso_knn_test  <- testing(enso_knn_split)
+
+enso_knn_recipe <- recipe(enso_status ~ ., 
+                      data = enso_knn
+                      ) %>% 
+  step_naomit(all_predictors()) %>% #ensure no predictors are missing
+  step_dummy(all_nominal(), -all_outcomes()) #create dummy variables
+```
+
 
 ```{r}
 #create frequency table of ENSO events
