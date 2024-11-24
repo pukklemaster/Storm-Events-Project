@@ -556,3 +556,19 @@ test <- storm_fit_1 %>%
   tidy()
 ```
 
+```{r}
+storm_pred %>% 
+  mutate(
+    result = case_when(
+      deadly == prediction ~ 'Correct',
+      TRUE ~ 'Incorrect'
+    )
+  ) %>% 
+    group_by(
+      result
+    ) %>% 
+      summarise(
+        percentage = n()/250000*100
+      )
+```
+
