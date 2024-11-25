@@ -14,13 +14,13 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r load-lib, message = FALSE}
 library(tidyverse)
 library(janitor)
+library(maps)
 ```
 
 ```{r load-data}
 details = read_rds('../data/clean_data/details_clean.rds')
 fatalities = read_rds('../data/clean_data/fatalities_clean.rds')
 ```
-
 
 
 ```{r filter events}
@@ -33,9 +33,19 @@ severe_details <- details %>%
     desc(sum_damage_total),
   ) %>%
   distinct(event_type, .keep_all = TRUE) 
-severe_details
 
-severe_details_recent
+
+```
+
+```{r not severe}
+not_severe_details <- details %>%
+  select(-c(episode_id, wfo, source, region_fips, end_dt, region_fips, cz_type, cz_fips, cz_name, cz_timezone, injuries_direct, injuries_indirect, deaths_direct, deaths_indirect, flood_cause, category, tor_f_scale, tor_length, tor_width, tor_other_wfo, tor_other_cz_state, tor_other_cz_fips, tor_other_cz_name, begin_azimuth, end_azimuth, begin_lon, begin_lat, end_lon, end_lat, duration, magnitude_type, begin_range, begin_location, end_range)) %>%
+  group_by(event_type) %>%
+  mutate(sum_damage_total = sum(damage_total, na.rm = TRUE)) %>%
+  ungroup() %>%
+  arrange(
+    desc(sum_damage_total),
+  ) 
 
 ```
 
@@ -46,70 +56,110 @@ combined_data <- severe_details %>%
 
 ```
 
-
-
-```{r damage over time}
-details %>%
-  mutate(
- year = year(as.Date(begin_dt))
-  ) %>%
-  group_by(year)%>%
-    ggplot(mapping = aes(x = year, y = log(damage_total), color = factor(event_type))) + 
-  geom_col() + 
-  labs(x = "year", y = "total damage($)", title = "Total damage over years")
-
+```{r not combined}
+not_combined_data <- not_severe_details %>%
+  full_join(fatalities, by = "event_id")
 ```
 
+
 ```{r no fatalities per region}
-fatalities_by_region <-combined_data%>%
+fatalities_by_region <-not_combined_data%>%
   group_by(region) %>%
   summarize(
     no_fatalities = n_distinct(fatality_id)) %>%
   mutate(no_fatalities = no_fatalities) %>%
   ungroup()
 
-total_fatalities <- combined_data %>%
+total_fatalities <- not_combined_data %>%
   summarize(total_fatalities = n_distinct(fatality_id)) %>%
   pull(total_fatalities)
   
 fatalities_by_region <- fatalities_by_region %>%
   mutate(total_fatalities= total_fatalities)
 
-combined_data <- combined_data %>%
+not_combined_data <- not_combined_data %>%
   left_join(fatalities_by_region, by="region")
 
 ```
 
 
+```{r not fatalities frequency map}
 
-```{r fatalities frequency map}
-
-combined_data <- combined_data %>% 
+not_combined_data <- not_combined_data %>% 
   mutate(region = tolower(region))
 
 fatalities_by_region <- fatalities_by_region %>%
   mutate(region = tolower(region))
 
-fatalities_by_region
              
 usa_map <- map_data("state")
              
 map_combined <- usa_map %>% 
   left_join(fatalities_by_region, by = "region") 
 
+map_combined
 
 map_combined %>% 
   ggplot(
     mapping = aes(
-      x = long, y = lat, group = group, fill = no_fatalities, color = "black"
-    )
+      x = long, y = lat, group = group, fill = no_fatalities)
   ) +
   geom_polygon() +
-  scale_fill_gradient(low = "yellow", high = "red") + 
-  labs(title = "Map of the USA") +
+  scale_fill_gradient(low = "yellow", high = "red", name = "Number of fatalities") + 
+  labs(
+    title = "Number of fatalities per state") +
   theme_minimal()
 ```
-```{r frequency events}
+
+
+
+```{r not frequency events}
+not_frequency_by_region <-not_combined_data%>%
+  group_by(region) %>%
+  summarize(
+    no_events = n_distinct(event_id)) %>%
+  mutate(no_events = no_events) %>%
+  ungroup()
+
+not_total_events <- not_combined_data %>%
+  summarize(total_events = n_distinct(event_id)) %>%
+  pull(total_events)
+  
+not_frequency_by_region <- not_frequency_by_region %>%
+  mutate(not_total_events= total_events)
+
+not_combined_data <- not_combined_data %>%
+  left_join(not_frequency_by_region, by="region")
+
+```
+
+```{r not event frequency map}
+not_combined_data <- not_combined_data %>% 
+  mutate(region = tolower(region))
+
+not_frequency_by_region <- not_frequency_by_region %>%
+  mutate(region = tolower(region))
+
+             
+usa_map <- map_data("state")
+             
+map_combined <- usa_map %>% 
+  left_join(not_frequency_by_region, by = "region") 
+
+
+map_combined %>% 
+  ggplot(
+    mapping = aes(
+      x = long, y = lat, group = group, fill = no_events)
+  ) +
+  geom_polygon() +
+  scale_fill_gradient(low = "yellow", high = "red", name = "Number of events") + 
+  labs(
+    title = "Number of all weather events experienced per state") +
+  theme_minimal()
+```
+
+```{r  frequency events}
 frequency_by_region <-combined_data%>%
   group_by(region) %>%
   summarize(
@@ -129,6 +179,7 @@ combined_data <- combined_data %>%
 
 ```
 
+
 ```{r event frequency map}
 
 combined_data <- combined_data %>% 
@@ -147,19 +198,17 @@ map_combined <- usa_map %>%
 map_combined %>% 
   ggplot(
     mapping = aes(
-      x = long, y = lat, group = group, fill = no_events, color = "black"
-    )
+      x = long, y = lat, group = group, fill = no_events)
   ) +
   geom_polygon() +
-  scale_fill_gradient(low = "yellow", high = "red") + 
-  labs(title = "Map of the USA") +
+  scale_fill_gradient(low = "yellow", high = "red", name = "Number of severe events") + 
+  labs(
+    title = "Map of the USA",
+    subtitle = "Most severe weather events experienced per state") +
   theme_minimal()
 ```
 
-
 ```{r map damage}
-library(ggplot2)
-library(maps)
 
 #load map data
 combined_data <- combined_data %>% 
@@ -167,40 +216,27 @@ combined_data <- combined_data %>%
              
 usa_map <- map_data("state")     
              
-map_combined_now <- combined_data_now %>% 
+map_combined<- combined_data%>% 
   full_join(usa_map)
 
 # Plot the map
-map_combined_now %>% 
+map_combined %>% 
   ggplot(
     mapping = aes(
       x = long, y = lat, group = group, fill = log(sum_damage_total)
     )
   ) +
   geom_polygon(colour='black') +
-  scale_fill_gradient(low = "yellow", high = "red") + 
-  labs(title = "Map of the USA") +
+  scale_fill_gradient(low = "yellow", high = "red", name = "Total Damage ($)") + 
+  labs(title = "States experiencing the most damage") +
   theme_minimal()
+
+
 
 #https://eriqande.github.io/rep-res-web/lectures/making-maps-with-R.html
 ```
 
 
-```{r damage over time2} 
-overtime_severe_details <- severe_details %>%
-  slice_head(n=10)
 
-overtime_severe_details %>%
-  mutate(
-    year = year(as.Date(begin_dt))
-  ) %>%
-  filter(
-    year >2000
-  ) %>%
-  group_by(year) %>%
-  ggplot(mapping = aes(x = year, y = log(damage_total), color = factor(event_type))) +
-  geom_point(size = 1) +
-  facet_wrap(~event_type, scales = "free") + 
-  labs(
-    x = "year", y = "total damage ($)")
-```
+
+
