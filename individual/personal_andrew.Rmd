@@ -29,22 +29,9 @@ fatalities %>%
 
 ```
 
-```{r median age group}
-
-median_fatality <- filter(fatalities, fatality_age < 70 & fatality_age > 13)
-  
-events<- details %>% select(event_id, event_type)
-
-right_join(events, median_fatality) %>%
-  group_by(event_type) %>%
-  count(event_type) %>%
-  na.omit %>%
-  arrange(desc(n)) # most fatal weather events for 14 - 69 year olds
-
-
-```
-
 ```{r seperate weather events}
+
+events<- details %>% select(event_id, event_type)
 
 #seperating events into categories
 # Marine - water related events or events relating to bodies of water
@@ -75,7 +62,7 @@ events <-events %>%
     event_type == "Sneakerwave" ~ "Marine",
     event_type == "Marine Lightning" ~ "Marine",
     event_type == "Marine Tropical Depression" ~ "Marine",
-    event_type == ("Marine Hurricane/Typhoon") ~ "Marine",
+    event_type == "Marine Hurricane/Typhoon" ~ "Marine",
     event_type == "Marine Dense Fog" ~ "Marine",
     event_type == "Avalanche" ~ "Ice/Snow",
     event_type == "Blizzard" ~ "Ice/Snow",
@@ -115,13 +102,30 @@ events <-events %>%
 
 ```
 
+
+```{r median age group}
+
+median_fatality <- filter(fatalities, fatality_age < 70 & fatality_age > 13)
+  
+median_fatality <- right_join(events, median_fatality)
+
+right_join(events, median_fatality) %>%
+  group_by(event_type) %>%
+  count(event_type) %>%
+  na.omit %>%
+  arrange(desc(n)) # most fatal weather events for 14 - 69 year olds
+
+
+```
+
+
 ```{r old age group}
 
-elderly_fatality <- filter(fatalities, fatality_age >= 70) %>%
-  select(event_id)
+elderly_fatality <- filter(fatalities, fatality_age >= 70)
   
 elderly_fatality <- right_join(events, elderly_fatality)
 
+# ---
 
 elderly_fatality %>%
   group_by(weather_cat) %>%
@@ -135,14 +139,17 @@ elderly_fatality %>%
   na.omit()%>%
   arrange(desc(n))
 
+# ---
+
 ```
 
 ```{r young age group}
 
-young_fatality <- filter(fatalities, fatality_age <= 13) %>%
-  select(event_id)
+young_fatality <- filter(fatalities, fatality_age <= 13) 
   
 young_fatality <- right_join(events, young_fatality)
+
+# ---
 
 young_fatality %>%
   group_by(event_type) %>%
@@ -150,6 +157,76 @@ young_fatality %>%
   na.omit() %>%
   arrange(desc(n))
 
+# ---
+
+```
+
+
+```{r which category affects each age group the most}
+
+
+right_join(events, median_fatality)%>%
+  group_by(weather_cat) %>%
+  count() %>%
+  na.omit()%>%
+  arrange(desc(n))
+
+elderly_fatality %>%
+  group_by(weather_cat) %>%
+  count() %>%
+  na.omit()%>%
+  arrange(desc(n))
+
+young_fatality %>%
+  group_by(weather_cat) %>%
+  count() %>%
+  na.omit()%>%
+  arrange(desc(n))
+
+
+
+```
+
+```{r reg }
+
+  
+
+elderly_fat_reg <- elderly_fatality %>%
+  filter(weather_cat == "Fire/HiTemps") %>%
+  count(event_type) %>%
+  arrange(desc(n))
+
+
+```
+
+```{r}
+
+median_fatality <- median_fatality %>%
+  add_column(age_group = "median")
+
+elderly_fatality <- elderly_fatality %>%
+  add_column(age_group = "elderly")
+
+young_fatality <- young_fatality %>%
+  add_column(age_group = "young")
+
+#combined_fatality <-
+
+old_young <- rbind(elderly_fatality, young_fatality)
+combine_fatality <- rbind(old_young, median_fatality)
+
+```
+
+```{r plot of age groups and fatality type}
+
+ggplot(na.omit(combine_fatality), aes(x=age_group, fill=weather_cat)) +
+  geom_bar(position = "fill") +
+  scale_fill_brewer(palette = "Dark2") +
+  labs(x= "Age Group", y= "Proportion of fatalities for each category") +
+  theme_bw() 
+
+```
+```{r Elderly - where is it affected?}
 
 
 ```
