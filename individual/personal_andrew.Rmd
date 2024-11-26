@@ -23,7 +23,11 @@ fatalities = read_rds('../data/clean_data/fatalities_clean.rds')
 
 fatalities %>%
   ggplot(mapping = aes(x = fatality_age)) +
-    geom_histogram(binwidth = 4) #shows how many people from 4 year age groups have passed from weather events
+    geom_histogram(binwidth = 4) +
+  labs(x="Ages", y ="Number of fatalities", title="Frequency Plot of Fatalities With Respect to Age") +
+  theme_bw()
+
+#shows how many people from 4 year age groups have passed from weather events
 
 # 3524 fatalities with NA value for age, 2418 for sex
 
@@ -162,7 +166,9 @@ young_fatality %>%
 ```
 
 
-```{r which category affects each age group the most}
+```{r}
+
+# which category affects each age group the most
 
 median_fatality %>% # count of each weather category fatalities, this is plotted below
   group_by(weather_cat) %>%
@@ -188,6 +194,8 @@ young_fatality %>%
 
 ```{r}
 
+# Combining fatalities
+
 median_fatality <- median_fatality %>%
   add_column(age_group = "median")
 
@@ -202,7 +210,9 @@ combine_fatality <- rbind(old_young, median_fatality)
 
 ```
 
-```{r plot of age groups and fatality type}
+```{r}
+
+# plot of age groups and fatality type
 
 ggplot(na.omit(combine_fatality), aes(x=age_group, fill=weather_cat)) +
   geom_bar(position = "fill") +
@@ -212,7 +222,9 @@ ggplot(na.omit(combine_fatality), aes(x=age_group, fill=weather_cat)) +
 
 ```
 
-```{r Elderly - where is it affected?}
+```{r}
+
+# Elderly - where is it affected?
 
 # most affected by fire hi temps and tropical unlike the median category
 
@@ -224,9 +236,11 @@ ggplot(aes(x=event_type, fill=weather_cat)) +
   theme_bw()+
   coord_flip() 
 
-#elderly_category
+elderly_category
 
 # elderly age group plotted against disproportionate weather categories affecting them
+
+# ---
 
 elderly_fatality %>%
   filter(weather_cat == "Fire/HiTemps" | weather_cat == "Tropical") %>%
@@ -237,7 +251,9 @@ elderly_fatality %>%
 
 ```
 
-```{r Young - Where is it affected?}
+```{r}
+
+# Young - Where is it affected?
 
 young_category <- filter(young_fatality, weather_cat == "Marine" | weather_cat == "Atmospheric") %>%
 ggplot(aes(x=event_type, fill=weather_cat)) +
@@ -247,7 +263,9 @@ ggplot(aes(x=event_type, fill=weather_cat)) +
   theme_bw()+
   coord_flip() # young fatality age group plotted with the 2 largest disproportionate causes of fatalities
 
-#young_category
+young_category
+
+# ---
 
 young_fatality %>%
   filter(weather_cat == "Marine" | weather_cat == "Atmospheric") %>%
@@ -258,8 +276,9 @@ young_fatality %>%
 
 ```
 
-```{r How has weather fatalities changed over time?}
+```{r}
 
+# How has weather fatalities changed over time?
 
 combine_facet <- ggplot(na.omit(combine_fatality), aes(x=age_group, fill=weather_cat)) +
   geom_bar(position = "fill") +
@@ -276,11 +295,14 @@ combine_facet <- ggplot(na.omit(combine_fatality), aes(x=age_group, fill=weather
 
 # proportionality of weather categories and fatality over years
 
-#combine_facet
+combine_facet
 
 ```
 
-```{r are Fire/HiTemps increasing?}
+```{r}
+
+# are Fire/HiTemps increasing?
+
 combine_lines <- filter(combine_fatality, weather_cat == "Fire/HiTemps") %>%
   ggplot(aes(x=year(ymd), colour=event_type)) +
   geom_line(aes(fill=..count..),stat="bin", binwidth = 1, linewidth = 1) +
@@ -290,16 +312,16 @@ combine_lines <- filter(combine_fatality, weather_cat == "Fire/HiTemps") %>%
 
 # plot looks at the changes of Fire/HiTemps weather_cat over years
 
-#combine_lines
+combine_lines
 
 # ---
 
-combine_hist <- filter(na.omit(combine_fatality), weather_cat == "Fire/HiTemps" & year(ymd) >= "1998" & year(ymd) <= "2003") %>%
+combine_hist <- filter(na.omit(combine_fatality), weather_cat == "Fire/HiTemps" & year(ymd) >= "1995" & year(ymd) <= "2008") %>%
   ggplot(aes(x=year(ymd))) +
   geom_histogram(binwidth = 1) +
-  labs(y="Amount of fatalities",x="Years",title="Fire and High Temperature Fatalities Between 1998 and 2003") +
+  labs(y="Amount of fatalities",x="Years",title="Unusually High Fire and High Temperature Fatalities Between 1998 and 2003") +
   theme_bw() # Histogram plot of extraordinary data between 1998 and 2003
 
-#combine_hist
+combine_hist
 
 ```
