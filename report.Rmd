@@ -1,6 +1,6 @@
 ---
 title: "Just Commit"
-author: "by Just Commit (Group number: 17): Liv, Max, Sarah, Helen, Andrew, & Adam"
+author: "by Just Commit (Group number: 17): Olivia Harris, Maxwell Pohlmann, Sarah Stewart, Helen Miller, Andrew Morris, & Adam Laycock"
 date: "`r Sys.Date()`"
 output: html_document
 ---
