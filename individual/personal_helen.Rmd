@@ -22,6 +22,8 @@ details = read_rds('../data/clean_data/details_clean.rds')
 fatalities = read_rds('../data/clean_data/fatalities_clean.rds')
 ```
 
+# Organise Data for ENSO Analysis
+
 ```{r}
 #remove irrelevant variables for ENSO analysis
 details_smaller <- details %>% 
@@ -57,13 +59,50 @@ details_enso <- details_smaller %>%
   ))
 ```
 
+# Explore Change in Event Numbers Over Time (Based on ENSO Status)
+
 ```{r}
-details_enso %>%
+slope_exploration <- details_enso %>%
+  #group events by month
   group_by(floor_date = floor_date(begin_dt, 'month')) %>% 
-  summarise(n = n(), enso_status = unique(enso_status)) %>% 
+  #find proportions that each event accounts for in different types of years
+  summarise(n = n(), enso_status = unique(enso_status))
+  
+#plot with points
+slope_exploration %>% 
   ggplot(mapping = aes(x=floor_date, y = log(n), color = enso_status)) +
-  #geom_point() +
-  geom_smooth(method = lm, se= FALSE)
+  geom_point() +
+  geom_smooth(method = lm, se= FALSE) +
+  scale_color_manual(values = c('el_nino' = 'midnightblue',
+                                'neutral' = 'purple2', 
+                                'la_nina' = 'mediumorchid2'
+                                ),
+    labels = c('El Niño', 'Neutral', 'La Niña')
+  ) +
+  labs(
+    x="Date",
+    y="Number of Events per Month (log scale)",
+    title="Event Count Over Time, Grouped by ENSO Status",
+    subtitle = "Includes Monthly Observations and Linear Model",
+    color = 'ENSO Status'
+  )
+  
+#plot with only lm
+slope_exploration %>% 
+  ggplot(mapping = aes(x=floor_date, y = log(n), color = enso_status)) +
+  geom_smooth(method = lm, se= FALSE) +
+  scale_color_manual(values = c('el_nino' = 'midnightblue',
+                                'neutral' = 'purple2', 
+                                'la_nina' = 'mediumorchid2'
+                                ),
+    labels = c('El Niño', 'Neutral', 'La Niña')) +
+  labs(
+    x="Date",
+    y="Number of Events per Month (log scale)",
+    title="Event Count Over Time, Grouped by ENSO Status",
+    subtitle = "Includes Only Linear Model",
+    color = 'ENSO Status'
+  )
   
 ```
 
@@ -125,15 +164,42 @@ el_nino_slope$enso_status <- "el_nino"
 la_nina_slope$enso_status <- "la_nina"
 neutral_slope$enso_status <- "neutral"
 
-combined_slopes <- dplyr::bind_rows(el_nino_slope, la_nina_slope, neutral_slope)
+combined_slopes <- dplyr::bind_rows(el_nino_slope, neutral_slope, la_nina_slope)
 
 combined_slopes %>% 
-  filter(term != '(Intercept)') %>% 
+  filter(term != '(Intercept)') %>% #removes intercept error bars
+  
   ggplot(mapping = aes(x = enso_status, y = .estimate, fill = enso_status)) +
+  
   geom_bar(stat = "identity", position = position_dodge(width = 0.8)) + 
-  geom_errorbar(aes(ymin = .lower, ymax = .upper), 
+  
+  geom_errorbar(aes
+                (ymin = .lower, ymax = .upper), 
                 position = position_dodge(width = 0.8),
-                width = 0.25)
+                width = 0.25
+                ) +
+  
+  scale_fill_manual(values = c('el_nino' = 'midnightblue',
+                                'neutral' = 'purple2', 
+                                'la_nina' = 'mediumorchid2'
+                                ),
+  labels = c('El Niño', 'La Niña', 'Neutral')
+  ) +
+  
+  scale_x_discrete(
+    labels = c('el_nino' = 'El Niño', 
+               'la_nina' = 'La Niña', 
+               'neutral' = 'Neutral'
+               )
+    ) +
+  
+  labs(
+    x="ENSO Status",
+    y="True Slope (of log-scaled model)",
+    title="Bootstrapped Linear Model Slopes by ENSO Status",
+  ) +
+  
+  theme(legend.position = 'none')
 ```
 
 
@@ -190,6 +256,9 @@ proportions_enso %>%
 ```
 
 ```{r, eval=FALSE}
+#I'm going to keep working on this, but it's quite difficult and I doubt it'll
+#be ready in time for the presentation
+
 #tears of sadness
 enso_knn <- details_enso %>% 
   select(event_id, 
