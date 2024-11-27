@@ -41,7 +41,7 @@ summary(model3)
 
 ggplot(events_per_year, aes(x = year, y = event_count)) +
   geom_point() +  
-  geom_smooth(method = "lm", se = TRUE, color = "red", linetype = "solid", size = 1) + 
+  geom_smooth(method = "lm", se = TRUE, color = "purple2", linetype = "solid", size = 1) + 
   labs(title = "Event Count Over Time",
        x = "Year",
        y = "Number of Events") +
@@ -71,7 +71,7 @@ summary(model_damages2)
 
 ggplot(damages_per_year, aes(x = year, y = total_damages)) +
   geom_point() +  
-  geom_smooth(method = "lm", se = TRUE, color = "red", linetype = "solid", size = 1) + 
+  geom_smooth(method = "lm", se = TRUE, color = "purple2", linetype = "solid", size = 1) + 
   labs(title = "Damages Total Over Time",
        x = "Year",
        y = "Total Damages") +
@@ -101,7 +101,7 @@ summary(model_fatalities2)
 
 ggplot(fatalities_per_year, aes(x = year, y = total_fatalities)) +
   geom_point() +  
-  geom_smooth(method = "lm", se = TRUE, color = "red", linetype = "solid", size = 1) + 
+  geom_smooth(method = "lm", se = TRUE, color = "purple2", linetype = "solid", size = 1) + 
   labs(title = "Total Fatalities Over Time",
        x = "Year",
        y = "Total Fatalities") +
@@ -112,6 +112,8 @@ ggplot(fatalities_per_year, aes(x = year, y = total_fatalities)) +
 
 
 ```{r event type breakdown}
+
+# Event type linear regression brreakdown
 
 events_per_year <- details %>%
   group_by(event_type, year) %>%
@@ -125,6 +127,9 @@ for (event in event_types) {
 }
 
 model_list
+
+
+# Finding Specific R- squared
 
 summary(model_list[["Thunderstorm Wind"]])$r.squared
 
@@ -146,24 +151,23 @@ summary(model_list[["Lightning"]])$r.squared
 # Extract the year coefficient for each event type
 coefficients <- sapply(model_list, function(m) coef(m)["year"])
 
-# Sort coefficients in descending order (top trends)
+# Top 10
 top10_coefficients <- sort(coefficients, decreasing = TRUE)
 top10 <- head(top10_coefficients, 10)
 
-# Sort coefficients in ascending order (bottom trends)
+print(top10)
+
+
+# Bottom 10
 bottom10_coefficients <- sort(coefficients, decreasing = FALSE)
 bottom10 <- head(bottom10_coefficients, 10)
 
-# Print top 10 and bottom 10 coefficients directly
-print("Top 10 increasing trends:")
-print(top10)
-
-print("Bottom 10 decreasing trends:")
 print(bottom10)
 
-# Finding R squared
+# R squared's above 0.5
 r_squared <- sapply(model_list, function(m) summary(m)$r.squared)
 valid_events <- names(coefficients[r_squared > 0.5])
+
 print(valid_events)
 
 ```
