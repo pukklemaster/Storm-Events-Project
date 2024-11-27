@@ -111,43 +111,6 @@ ggplot(fatalities_per_year, aes(x = year, y = total_fatalities)) +
 
 
 
-```{r Magnitudes}
-
-# Group data and create model list
-events_per_year <- details %>%
-  group_by(event_type, year) %>%
-  summarise(event_count = n())
-
-event_types <- unique(events_per_year$event_type)
-
-# Create an empty list to store the models
-model_list <- list()
-
-# Fit the models for each event type
-for (event in event_types) {
-  model_list[[event]] <- lm(event_count ~ year, data = subset(events_per_year, event_type == event))
-}
-
-# Extract the year coefficients and R-squared values
-coefficients <- sapply(model_list, function(m) coef(m)["year"])
-r_squared <- sapply(model_list, function(m) summary(m)$r.squared)
-
-# Filter for events with R-squared > 0.5
-valid_events <- names(coefficients[r_squared > 0.5])
-
-# Subset coefficients for valid events
-valid_coefficients <- coefficients[valid_events]
-
-# Sort the valid coefficients in descending order
-top10_coefficients <- sort(valid_coefficients, decreasing = TRUE)
-
-# Print the top 10 events with highest coefficients
-print("Top 10 increasing trends:")
-print(top10_coefficients[1:10])
-
-```
-
-
 ```{r event type breakdown}
 
 events_per_year <- details %>%
