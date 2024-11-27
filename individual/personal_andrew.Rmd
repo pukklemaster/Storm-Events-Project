@@ -316,7 +316,7 @@ combine_lines
 
 # ---
 
-combine_hist <- filter(na.omit(combine_fatality), weather_cat == "Fire/HiTemps" & year(ymd) >= "1995" & year(ymd) <= "2008") %>%
+combine_hist <- filter(na.omit(combine_fatality), event_type == "Heat" & year(ymd) >= "1995" & year(ymd) <= "2008") %>%
   ggplot(aes(x=year(ymd))) +
   geom_histogram(binwidth = 1) +
   labs(y="Amount of fatalities",x="Years",title="Unusually High Fire and High Temperature Fatalities Between 1998 and 2003") +
