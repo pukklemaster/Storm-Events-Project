@@ -83,7 +83,7 @@ not_combined_data <- not_combined_data %>%
 ```
 
 
-```{r not fatalities frequency map}
+```{r not fatalities  map}
 
 not_combined_data <- not_combined_data %>% 
   mutate(region = tolower(region))
@@ -113,7 +113,7 @@ map_combined %>%
 
 
 
-```{r not frequency events}
+```{r not severe frequency events}
 not_frequency_by_region <-not_combined_data%>%
   group_by(region) %>%
   summarize(
@@ -133,7 +133,7 @@ not_combined_data <- not_combined_data %>%
 
 ```
 
-```{r not event frequency map}
+```{r not severe event frequency map}
 not_combined_data <- not_combined_data %>% 
   mutate(region = tolower(region))
 
@@ -226,7 +226,7 @@ map_combined %>%
       x = long, y = lat, group = group, fill = log(sum_damage_total)
     )
   ) +
-  geom_polygon(colour='black') +
+  geom_polygon() +
   scale_fill_gradient(low = "yellow", high = "red", name = "Total Damage ($)") + 
   labs(title = "States experiencing the most damage") +
   theme_minimal()
