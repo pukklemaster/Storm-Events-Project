@@ -14,9 +14,196 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r load-lib, message = FALSE}
 library(tidyverse)
 library(janitor)
+library(dplyr)
 ```
 
 ```{r load-data}
 details = read_rds('../data/clean_data/details_clean.rds')
 fatalities = read_rds('../data/clean_data/fatalities_clean.rds')
 ```
+
+
+```{r evaluation}
+
+# Linear regression using year to predict the number of events per year
+
+# Making variable year
+details$year <- as.numeric(format(details$begin_dt, "%Y"))
+
+events_per_year <- aggregate(event_id ~ year, data = details, FUN = length)
+names(events_per_year) <- c("year", "event_count") 
+
+model3 <- lm(event_count ~ year, data = events_per_year)
+
+summary(model3)
+
+# Visualising
+
+ggplot(events_per_year, aes(x = year, y = event_count)) +
+  geom_point() +  
+  geom_smooth(method = "lm", se = TRUE, color = "red", linetype = "solid", size = 1) + 
+  labs(title = "Event Count Over Time",
+       x = "Year",
+       y = "Number of Events") +
+  theme_minimal()
+
+```
+
+
+
+```{r Damages}
+
+details$total_damages <- details$damage_property + details$damage_crops
+model_damages <- lm(total_damages ~ year, data = details)
+
+summary(model_damages)
+
+damages_per_year <- details %>%
+  group_by(year) %>%
+  summarise(total_damages = sum(damage_property + damage_crops, na.rm = TRUE))
+
+model_damages2 <- lm(total_damages ~ year, data = damages_per_year)
+
+summary(model_damages2)
+
+
+# Visualising
+
+ggplot(damages_per_year, aes(x = year, y = total_damages)) +
+  geom_point() +  
+  geom_smooth(method = "lm", se = TRUE, color = "red", linetype = "solid", size = 1) + 
+  labs(title = "Damages Total Over Time",
+       x = "Year",
+       y = "Total Damages") +
+  theme_minimal()
+```
+
+
+
+
+```{r Fatalities}
+
+# Linear Regression Total Fatalities / Year
+
+details$fatalities_total <- details$deaths_direct + details$deaths_indirect
+model_fatalities <- lm(fatalities_total ~ year, data = details)
+
+summary(model_fatalities)
+
+# Linear Regression Total Fatalities per Year / Year
+fatalities_per_year <- details %>%
+  group_by(year) %>%
+  summarise(total_fatalities = sum(deaths_direct + deaths_indirect, na.rm = TRUE))
+
+model_fatalities2 <- lm(total_fatalities ~ year, data = fatalities_per_year)
+
+summary(model_fatalities2)
+
+ggplot(fatalities_per_year, aes(x = year, y = total_fatalities)) +
+  geom_point() +  
+  geom_smooth(method = "lm", se = TRUE, color = "red", linetype = "solid", size = 1) + 
+  labs(title = "Total Fatalities Over Time",
+       x = "Year",
+       y = "Total Fatalities") +
+  theme_minimal()
+
+```
+
+
+
+```{r Magnitudes}
+
+# Group data and create model list
+events_per_year <- details %>%
+  group_by(event_type, year) %>%
+  summarise(event_count = n())
+
+event_types <- unique(events_per_year$event_type)
+
+# Create an empty list to store the models
+model_list <- list()
+
+# Fit the models for each event type
+for (event in event_types) {
+  model_list[[event]] <- lm(event_count ~ year, data = subset(events_per_year, event_type == event))
+}
+
+# Extract the year coefficients and R-squared values
+coefficients <- sapply(model_list, function(m) coef(m)["year"])
+r_squared <- sapply(model_list, function(m) summary(m)$r.squared)
+
+# Filter for events with R-squared > 0.5
+valid_events <- names(coefficients[r_squared > 0.5])
+
+# Subset coefficients for valid events
+valid_coefficients <- coefficients[valid_events]
+
+# Sort the valid coefficients in descending order
+top10_coefficients <- sort(valid_coefficients, decreasing = TRUE)
+
+# Print the top 10 events with highest coefficients
+print("Top 10 increasing trends:")
+print(top10_coefficients[1:10])
+
+```
+
+
+```{r event type breakdown}
+
+events_per_year <- details %>%
+  group_by(event_type, year) %>%
+  summarise(event_count = n())
+
+event_types <- unique(events_per_year$event_type)
+
+model_list <- list()
+for (event in event_types) {
+  model_list[[event]] <- lm(event_count ~ year, data = subset(events_per_year, event_type == event))
+}
+
+model_list
+
+summary(model_list[["Thunderstorm Wind"]])$r.squared
+
+summary(model_list[["Winter Weather"]])$r.squared
+
+summary(model_list[["Marine Thunderstorm Wind"]])$r.squared
+
+summary(model_list[["Heavy Rain"]])$r.squared
+
+summary(model_list[["Debris Flow"]])$r.squared
+
+summary(model_list[["Marine High Wind"]])$r.squared
+
+summary(model_list[["Rip Current"]])$r.squared
+
+summary(model_list[["Lightning"]])$r.squared
+
+
+# Extract the year coefficient for each event type
+coefficients <- sapply(model_list, function(m) coef(m)["year"])
+
+# Sort coefficients in descending order (top trends)
+top10_coefficients <- sort(coefficients, decreasing = TRUE)
+top10 <- head(top10_coefficients, 10)
+
+# Sort coefficients in ascending order (bottom trends)
+bottom10_coefficients <- sort(coefficients, decreasing = FALSE)
+bottom10 <- head(bottom10_coefficients, 10)
+
+# Print top 10 and bottom 10 coefficients directly
+print("Top 10 increasing trends:")
+print(top10)
+
+print("Bottom 10 decreasing trends:")
+print(bottom10)
+
+# Finding R squared
+r_squared <- sapply(model_list, function(m) summary(m)$r.squared)
+valid_events <- names(coefficients[r_squared > 0.5])
+print(valid_events)
+
+```
+
+
+
