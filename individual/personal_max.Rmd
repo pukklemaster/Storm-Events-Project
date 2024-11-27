@@ -24,6 +24,9 @@ fatalities = read_rds('../data/clean_data/fatalities_clean.rds')
 ```
 
 ```{r Details testing}
+# Rename redundant event type names
+  details <- details %>%
+    mutate(event_type = replace(event_type, event_type == "Hurricane (Typhoon)", "Hurricane"))
 
 # Select relevant columns and replace NA values
 details_selected <- details %>%
@@ -242,10 +245,5 @@ details_grouped_1996_7 %>%
 details_grouped_2013_4 %>%
   select(event_type, fatality_group, damage_group, avg_fatalities_by_type, avg_damage_by_type) %>%
   arrange(fatality_group, damage_group)
-
-# Convert and display all rows
-as.data.frame(details_grouped)
-as.data.frame(details_grouped_1996_7)
-as.data.frame(details_grouped_2013_4)
 
 ```
