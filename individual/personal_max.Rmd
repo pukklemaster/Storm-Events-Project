@@ -164,9 +164,9 @@ damage_graph_1996_7 <- details_grouped_1996_7 %>%
     axis.text.x = element_text(size = 5)  # Adjust x-axis text size to avoid overlap
   )
 
-# Filter for 2014
-details_2013_4 <- details_selected %>% filter(year %in% c(2013, 2014))
-details_grouped_2013_4 <- details_2013_4 %>%
+# Filter for 2022-3
+details_2022_3 <- details_selected %>% filter(year %in% c(2022, 2023))
+details_grouped_2022_3 <- details_2022_3 %>%
   mutate(fatalities_total = deaths_direct + deaths_indirect) %>%
   group_by(event_type) %>%
   summarise(
@@ -175,29 +175,29 @@ details_grouped_2013_4 <- details_2013_4 %>%
   ) %>%
   ungroup()
 
-# Recalculate global averages for 2014 data
-global_averages_2013_4 <- details_grouped_2013_4 %>%
+# Recalculate global averages for 2022-3 data
+global_averages_2022_3 <- details_grouped_2022_3 %>%
   summarise(
     global_avg_fatalities = mean(avg_fatalities_by_type, na.rm = TRUE),
     global_avg_damage = mean(avg_damage_by_type, na.rm = TRUE)
   )
 
-# Add grouping for 2014 data
-details_grouped_2013_4 <- details_grouped_2013_4 %>%
+# Add grouping for 2022-3 data
+details_grouped_2022_3 <- details_grouped_2022_3 %>%
   mutate(
-    fatality_group = if_else(avg_fatalities_by_type > global_averages_2013_4$global_avg_fatalities,
+    fatality_group = if_else(avg_fatalities_by_type > global_averages_2022_3$global_avg_fatalities,
                              "More Deadly", "Less Deadly"),
-    damage_group = if_else(avg_damage_by_type > global_averages_2013_4$global_avg_damage,
+    damage_group = if_else(avg_damage_by_type > global_averages_2022_3$global_avg_damage,
                            "More Damaging", "Less Damaging")
   )
 
-# Adjusted Graph for 2014 Fatalities
-fatality_graph_2013_4 <- details_grouped_2013_4 %>%
+# Adjusted Graph for 2022-3 Fatalities
+fatality_graph_2022_3 <- details_grouped_2022_3 %>%
   ggplot(aes(x = fatality_group, 
              y = avg_fatalities_by_type, 
              fill = fatality_group)) +
   stat_summary(fun = "mean", geom = "bar", position = "dodge", alpha = 0.7) +
-  labs(title = "2013-4: Fatalities by Group", subtitle = "Data from 2013-4", 
+  labs(title = "2022-3: Fatalities by Group", subtitle = "Data from 2022-3", 
        x = "Weather Group",  # Renamed the x-axis
        y = "Average Fatalities") +
   theme_minimal() +
@@ -205,13 +205,13 @@ fatality_graph_2013_4 <- details_grouped_2013_4 %>%
     axis.text.x = element_text(size = 5)  # Adjust x-axis text size to avoid overlap
   )
 
-# Adjusted Graph for 2014 Damages
-damage_graph_2013_4 <- details_grouped_2013_4 %>%
+# Adjusted Graph for 2022-3 Damages
+damage_graph_2022_3 <- details_grouped_2022_3 %>%
   ggplot(aes(x = damage_group, 
              y = avg_damage_by_type, 
              fill = damage_group)) +
   stat_summary(fun = "mean", geom = "bar", position = "dodge", alpha = 0.7) +
-  labs(title = "2013-4: Damages by Group", subtitle = "Data from 2013-4", 
+  labs(title = "2022-3: Damages by Group", subtitle = "Data from 2022-3", 
        x = "Weather Group",  # Renamed the x-axis
        y = "Average Damages (USD)") +
   theme_minimal() +
@@ -222,12 +222,12 @@ damage_graph_2013_4 <- details_grouped_2013_4 %>%
 # Combine all plots
 combined_original <- fatality_graph + damage_graph
 combined_1996_7 <- fatality_graph_1996_7 + damage_graph_1996_7
-combined_2013_4 <- fatality_graph_2013_4 + damage_graph_2013_4
+combined_2022_3 <- fatality_graph_2022_3 + damage_graph_2022_3
 
 # Display plots
 combined_original
 combined_1996_7
-combined_2013_4
+combined_2022_3
 
 # Display values
 
@@ -241,8 +241,8 @@ details_grouped_1996_7 %>%
   select(event_type, fatality_group, damage_group, avg_fatalities_by_type, avg_damage_by_type) %>%
   arrange(fatality_group, damage_group) 
 
-# Exact values for 2013-4
-details_grouped_2013_4 %>%
+# Exact values for 2022-3
+details_grouped_2022_3 %>%
   select(event_type, fatality_group, damage_group, avg_fatalities_by_type, avg_damage_by_type) %>%
   arrange(fatality_group, damage_group)
 
