@@ -36,6 +36,30 @@ knitr::opts_chunk$set(fig.retina = 3, dpi = 300, fig.width = 6, fig.asp = 0.618,
 - Multiple storm events are grouped in storm episodes.
 
 ---
-.center[
-test
-]
+class: center, middle
+
+# How have storm events changed over time and what is the effect on people and property?
+
+---
+# Dataset Overview (Liv)
+
+---
+# Severity of Storms (Sarah)
+
+---
+# Geospatial Correlations (Adam)
+
+---
+# (Max)
+
+---
+# (Helen)
+
+---
+# (Andrew)
+
+---
+# Summary
+
+---
+# Questions?
