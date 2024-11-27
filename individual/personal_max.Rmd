@@ -14,6 +14,8 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r load-lib, message = FALSE}
 library(tidyverse)
 library(janitor)
+library(broom)
+library(patchwork)
 ```
 
 ```{r load-data}
@@ -23,36 +25,32 @@ fatalities = read_rds('../data/clean_data/fatalities_clean.rds')
 
 ```{r Details testing}
 
-# Step 1: Clean column names and inspect
-details_clean <- details %>% clean_names()
-print(colnames(details_clean))
-
-# Step 2: Select relevant columns and replace NA values
-details_selected <- details_clean %>%
-  select(event_type, deaths_direct, deaths_indirect, damage_total, begin_dt) %>%  # Include begin_dt
+# Select relevant columns and replace NA values
+details_selected <- details %>%
+  select(event_type, deaths_direct, deaths_indirect, damage_total, begin_dt) %>%  
   mutate(
-    year = as.numeric(format(as.Date(begin_dt, format = "%Y-%m-%d"), "%Y"))  # Extract year from begin_dt
+    year = as.numeric(format(as.Date(begin_dt, format = "%Y-%m-%d"), "%Y"))  
   ) %>%
   na.omit()
 glimpse(details_selected)
 
-# Step 3: Calculate total fatalities and damage per event, and group by event type
+# Calculate total fatalities and damage per event, and group by event type
 details_grouped <- details_selected %>%
   mutate(
     fatalities_total = deaths_direct + deaths_indirect  # Calculate total fatalities
   ) %>%
   group_by(event_type) %>%
   summarise(
-    avg_fatalities_by_type = mean(fatalities_total, na.rm = TRUE),  # Average fatalities per event type
-    avg_damage_by_type = mean(damage_total, na.rm = TRUE)  # Average damages per event type
+    avg_fatalities_by_type = mean(fatalities_total, na.rm = TRUE),  
+    avg_damage_by_type = mean(damage_total, na.rm = TRUE)  
   ) %>%
   ungroup()
 
-# Step 4: Calculate global averages and assign groups
+# Calculate global averages and assign groups
 global_averages <- details_grouped %>%
   summarise(
-    global_avg_fatalities = mean(avg_fatalities_by_type, na.rm = TRUE),  # Global average fatalities
-    global_avg_damage = mean(avg_damage_by_type, na.rm = TRUE)  # Global average damages
+    global_avg_fatalities = mean(avg_fatalities_by_type, na.rm = TRUE),  
+    global_avg_damage = mean(avg_damage_by_type, na.rm = TRUE)  
   )
 
 # Add grouping for more/less deadly and damaging based on global averages
@@ -64,8 +62,7 @@ details_grouped <- details_grouped %>%
                            "More Damaging", "Less Damaging")
   )
 
-# Step 5: Create side-by-side plots using bar plots
-library(patchwork)
+## Create side-by-side plots using bar plots
 
 # Adjusted Graph for Fatalities (All Data)
 fatality_graph <- details_grouped %>%
@@ -109,11 +106,9 @@ damage_graph <- details_grouped %>%
     axis.text.x = element_text(size = 5)  # Adjust x-axis text size to avoid overlap
   )
 
-# **Fix for 1996 Data**
-
 # Filter for 1996
-details_1996 <- details_selected %>% filter(year == 1996)
-details_grouped_1996 <- details_1996 %>%
+details_1996_7 <- details_selected %>% filter(year %in% c(1996, 1997))
+details_grouped_1996_7 <- details_1996_7 %>%
   mutate(fatalities_total = deaths_direct + deaths_indirect) %>%
   group_by(event_type) %>%
   summarise(
@@ -123,28 +118,28 @@ details_grouped_1996 <- details_1996 %>%
   ungroup()
 
 # Recalculate global averages for 1996 data
-global_averages_1996 <- details_grouped_1996 %>%
+global_averages_1996_7 <- details_grouped_1996_7 %>%
   summarise(
     global_avg_fatalities = mean(avg_fatalities_by_type, na.rm = TRUE),
     global_avg_damage = mean(avg_damage_by_type, na.rm = TRUE)
   )
 
 # Add grouping for 1996 data
-details_grouped_1996 <- details_grouped_1996 %>%
+details_grouped_1996_7 <- details_grouped_1996_7 %>%
   mutate(
-    fatality_group = if_else(avg_fatalities_by_type > global_averages_1996$global_avg_fatalities,
+    fatality_group = if_else(avg_fatalities_by_type > global_averages_1996_7$global_avg_fatalities,
                              "More Deadly", "Less Deadly"),
-    damage_group = if_else(avg_damage_by_type > global_averages_1996$global_avg_damage,
+    damage_group = if_else(avg_damage_by_type > global_averages_1996_7$global_avg_damage,
                            "More Damaging", "Less Damaging")
   )
 
 # Adjusted Graph for 1996 Fatalities
-fatality_graph_1996 <- details_grouped_1996 %>%
+fatality_graph_1996_7 <- details_grouped_1996_7 %>%
   ggplot(aes(x = fatality_group, 
              y = avg_fatalities_by_type, 
              fill = fatality_group)) +
   stat_summary(fun = "mean", geom = "bar", position = "dodge", alpha = 0.7) +
-  labs(title = "1996: Fatalities by Group", subtitle = "Data from 1996", 
+  labs(title = "1996-7: Fatalities by Group", subtitle = "Data from 1996-7", 
        x = "Weather Group",  # Renamed the x-axis
        y = "Average Fatalities") +
   theme_minimal() +
@@ -153,12 +148,12 @@ fatality_graph_1996 <- details_grouped_1996 %>%
   )
 
 # Adjusted Graph for 1996 Damages
-damage_graph_1996 <- details_grouped_1996 %>%
+damage_graph_1996_7 <- details_grouped_1996_7 %>%
   ggplot(aes(x = damage_group, 
              y = avg_damage_by_type, 
              fill = damage_group)) +
   stat_summary(fun = "mean", geom = "bar", position = "dodge", alpha = 0.7) +
-  labs(title = "1996: Damages by Group", subtitle = "Data from 1996", 
+  labs(title = "1996-7: Damages by Group", subtitle = "Data from 1996-7", 
        x = "Weather Group",  # Renamed the x-axis
        y = "Average Damages (USD)") +
   theme_minimal() +
@@ -166,11 +161,9 @@ damage_graph_1996 <- details_grouped_1996 %>%
     axis.text.x = element_text(size = 5)  # Adjust x-axis text size to avoid overlap
   )
 
-# **Fix for 2014 Data**
-
 # Filter for 2014
-details_2014 <- details_selected %>% filter(year == 2014)
-details_grouped_2014 <- details_2014 %>%
+details_2013_4 <- details_selected %>% filter(year %in% c(2013, 2014))
+details_grouped_2013_4 <- details_2013_4 %>%
   mutate(fatalities_total = deaths_direct + deaths_indirect) %>%
   group_by(event_type) %>%
   summarise(
@@ -180,28 +173,28 @@ details_grouped_2014 <- details_2014 %>%
   ungroup()
 
 # Recalculate global averages for 2014 data
-global_averages_2014 <- details_grouped_2014 %>%
+global_averages_2013_4 <- details_grouped_2013_4 %>%
   summarise(
     global_avg_fatalities = mean(avg_fatalities_by_type, na.rm = TRUE),
     global_avg_damage = mean(avg_damage_by_type, na.rm = TRUE)
   )
 
 # Add grouping for 2014 data
-details_grouped_2014 <- details_grouped_2014 %>%
+details_grouped_2013_4 <- details_grouped_2013_4 %>%
   mutate(
-    fatality_group = if_else(avg_fatalities_by_type > global_averages_2014$global_avg_fatalities,
+    fatality_group = if_else(avg_fatalities_by_type > global_averages_2013_4$global_avg_fatalities,
                              "More Deadly", "Less Deadly"),
-    damage_group = if_else(avg_damage_by_type > global_averages_2014$global_avg_damage,
+    damage_group = if_else(avg_damage_by_type > global_averages_2013_4$global_avg_damage,
                            "More Damaging", "Less Damaging")
   )
 
 # Adjusted Graph for 2014 Fatalities
-fatality_graph_2014 <- details_grouped_2014 %>%
+fatality_graph_2013_4 <- details_grouped_2013_4 %>%
   ggplot(aes(x = fatality_group, 
              y = avg_fatalities_by_type, 
              fill = fatality_group)) +
   stat_summary(fun = "mean", geom = "bar", position = "dodge", alpha = 0.7) +
-  labs(title = "2014: Fatalities by Group", subtitle = "Data from 2014", 
+  labs(title = "2013-4: Fatalities by Group", subtitle = "Data from 2013-4", 
        x = "Weather Group",  # Renamed the x-axis
        y = "Average Fatalities") +
   theme_minimal() +
@@ -210,12 +203,12 @@ fatality_graph_2014 <- details_grouped_2014 %>%
   )
 
 # Adjusted Graph for 2014 Damages
-damage_graph_2014 <- details_grouped_2014 %>%
+damage_graph_2013_4 <- details_grouped_2013_4 %>%
   ggplot(aes(x = damage_group, 
              y = avg_damage_by_type, 
              fill = damage_group)) +
   stat_summary(fun = "mean", geom = "bar", position = "dodge", alpha = 0.7) +
-  labs(title = "2014: Damages by Group", subtitle = "Data from 2014", 
+  labs(title = "2013-4: Damages by Group", subtitle = "Data from 2013-4", 
        x = "Weather Group",  # Renamed the x-axis
        y = "Average Damages (USD)") +
   theme_minimal() +
@@ -225,12 +218,34 @@ damage_graph_2014 <- details_grouped_2014 %>%
 
 # Combine all plots
 combined_original <- fatality_graph + damage_graph
-combined_1996 <- fatality_graph_1996 + damage_graph_1996
-combined_2014 <- fatality_graph_2014 + damage_graph_2014
+combined_1996_7 <- fatality_graph_1996_7 + damage_graph_1996_7
+combined_2013_4 <- fatality_graph_2013_4 + damage_graph_2013_4
 
 # Display plots
 combined_original
-combined_1996
-combined_2014
+combined_1996_7
+combined_2013_4
+
+# Display values
+
+# Exact values for the original chart
+details_grouped %>%
+  select(event_type, fatality_group, damage_group, avg_fatalities_by_type, avg_damage_by_type) %>%
+  arrange(fatality_group, damage_group)
+
+# Exact values for 1996-7
+details_grouped_1996_7 %>%
+  select(event_type, fatality_group, damage_group, avg_fatalities_by_type, avg_damage_by_type) %>%
+  arrange(fatality_group, damage_group) 
+
+# Exact values for 2013-4
+details_grouped_2013_4 %>%
+  select(event_type, fatality_group, damage_group, avg_fatalities_by_type, avg_damage_by_type) %>%
+  arrange(fatality_group, damage_group)
+
+# Convert and display all rows
+as.data.frame(details_grouped)
+as.data.frame(details_grouped_1996_7)
+as.data.frame(details_grouped_2013_4)
 
 ```
