@@ -34,7 +34,7 @@ knitr::opts_chunk$set(fig.retina = 3, dpi = 300, fig.width = 6, fig.asp = 0.618,
 
 ## What is a 'Storm Event'?
 - According to the NOAA, storm events are 'weather phenomena having sufficient intensity to cause loss of life, injuries, significant property damage, and/or disruption to commerce.'
-- Multiple storm events are grouped in storm episodes.
+- Multiple storm events are grouped into storm episodes.
 
 ---
 class: center, middle
