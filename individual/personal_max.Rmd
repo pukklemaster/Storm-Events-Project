@@ -14,6 +14,8 @@ knitr::opts_chunk$set(echo = TRUE)
 ```{r load-lib, message = FALSE}
 library(tidyverse)
 library(janitor)
+library(broom)
+library(patchwork)
 ```
 
 ```{r load-data}
@@ -23,36 +25,32 @@ fatalities = read_rds('../data/clean_data/fatalities_clean.rds')
 
 ```{r Details testing}
 
-# Step 1: Clean column names and inspect
-details_clean <- details %>% clean_names()
-print(colnames(details_clean))
-
-# Step 2: Select relevant columns and replace NA values
-details_selected <- details_clean %>%
-  select(event_type, deaths_direct, deaths_indirect, damage_total, begin_dt) %>%  # Include begin_dt
+# Select relevant columns and replace NA values
+details_selected <- details %>%
+  select(event_type, deaths_direct, deaths_indirect, damage_total, begin_dt) %>%  
   mutate(
-    year = as.numeric(format(as.Date(begin_dt, format = "%Y-%m-%d"), "%Y"))  # Extract year from begin_dt
+    year = as.numeric(format(as.Date(begin_dt, format = "%Y-%m-%d"), "%Y"))  
   ) %>%
   na.omit()
 glimpse(details_selected)
 
-# Step 3: Calculate total fatalities and damage per event, and group by event type
+# Calculate total fatalities and damage per event, and group by event type
 details_grouped <- details_selected %>%
   mutate(
     fatalities_total = deaths_direct + deaths_indirect  # Calculate total fatalities
   ) %>%
   group_by(event_type) %>%
   summarise(
-    avg_fatalities_by_type = mean(fatalities_total, na.rm = TRUE),  # Average fatalities per event type
-    avg_damage_by_type = mean(damage_total, na.rm = TRUE)  # Average damages per event type
+    avg_fatalities_by_type = mean(fatalities_total, na.rm = TRUE),  
+    avg_damage_by_type = mean(damage_total, na.rm = TRUE)  
   ) %>%
   ungroup()
 
-# Step 4: Calculate global averages and assign groups
+# Calculate global averages and assign groups
 global_averages <- details_grouped %>%
   summarise(
-    global_avg_fatalities = mean(avg_fatalities_by_type, na.rm = TRUE),  # Global average fatalities
-    global_avg_damage = mean(avg_damage_by_type, na.rm = TRUE)  # Global average damages
+    global_avg_fatalities = mean(avg_fatalities_by_type, na.rm = TRUE),  
+    global_avg_damage = mean(avg_damage_by_type, na.rm = TRUE)  
   )
 
 # Add grouping for more/less deadly and damaging based on global averages
@@ -64,8 +62,7 @@ details_grouped <- details_grouped %>%
                            "More Damaging", "Less Damaging")
   )
 
-# Step 5: Create side-by-side plots using bar plots
-library(patchwork)
+## Create side-by-side plots using bar plots
 
 # Adjusted Graph for Fatalities (All Data)
 fatality_graph <- details_grouped %>%
@@ -108,8 +105,6 @@ damage_graph <- details_grouped %>%
     plot.subtitle = element_text(size = 6.5),  # Adjust subtitle font size
     axis.text.x = element_text(size = 5)  # Adjust x-axis text size to avoid overlap
   )
-
-# **Fix for 1996 Data**
 
 # Filter for 1996
 details_1996_7 <- details_selected %>% filter(year %in% c(1996, 1997))
@@ -165,8 +160,6 @@ damage_graph_1996_7 <- details_grouped_1996_7 %>%
   theme(
     axis.text.x = element_text(size = 5)  # Adjust x-axis text size to avoid overlap
   )
-
-# **Fix for 2014 Data**
 
 # Filter for 2014
 details_2013_4 <- details_selected %>% filter(year %in% c(2013, 2014))
@@ -232,5 +225,27 @@ combined_2013_4 <- fatality_graph_2013_4 + damage_graph_2013_4
 combined_original
 combined_1996_7
 combined_2013_4
+
+# Display values
+
+# Exact values for the original chart
+details_grouped %>%
+  select(event_type, fatality_group, damage_group, avg_fatalities_by_type, avg_damage_by_type) %>%
+  arrange(fatality_group, damage_group)
+
+# Exact values for 1996-7
+details_grouped_1996_7 %>%
+  select(event_type, fatality_group, damage_group, avg_fatalities_by_type, avg_damage_by_type) %>%
+  arrange(fatality_group, damage_group) 
+
+# Exact values for 2013-4
+details_grouped_2013_4 %>%
+  select(event_type, fatality_group, damage_group, avg_fatalities_by_type, avg_damage_by_type) %>%
+  arrange(fatality_group, damage_group)
+
+# Convert and display all rows
+as.data.frame(details_grouped)
+as.data.frame(details_grouped_1996_7)
+as.data.frame(details_grouped_2013_4)
 
 ```
