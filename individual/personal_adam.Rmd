@@ -74,7 +74,7 @@ damage_plot <- cost_data %>%
 
 # Simple Statistics Function 
 
-```{r Simple Damage Statistics}
+```{r Simple Statistics Function}
 eval_percentage_criteria <- function(col, type) {
   col <- sym(col)
   
@@ -262,20 +262,7 @@ event_data <- details %>%
 ```
 
 ```{r Scaled Largest Changes, eval=FALSE}
-max_range <- event_data %>%
-  group_by(
-    event_type
-  ) %>%
-    summarise(
-      range_total = (max(total) - min(total)) / mean(total),
-      .groups = 'drop'
-    ) %>%
-      slice_max(
-        order_by = abs(range_total), 
-        n = 5
-      ) 
-
-mr_events <- unique(max_range$event_type)
+mr_events <- c('Drought', 'Hurricane', 'Thunderstorm Wind')
 
 event_data %>% 
   filter(
@@ -289,15 +276,15 @@ event_data %>%
       ) %>% 
         ggplot(mapping = aes(
           x = year,
-          y = log(total),
+          y = log10(total),
           colour = reorder(event_type, desc(mean_total))
         )) + 
         geom_smooth(method = 'gam', se = FALSE) +
         scale_x_continuous(breaks = seq(1996, 2023, by = 2)) +
         labs(
           x = 'Year',
-          y = 'Total Events',
-          title = 'Number of Events per Year by Event Type',
+          y = 'Log10(Total Events)',
+          title = 'Log10-Transformed Number of Events per Year by Event Type',
           subtitle = 'Only events with the five largest ranges of events per year are shown',
           colour = 'Event Type'
         ) +
@@ -408,7 +395,180 @@ total_region_data <- details %>%
     subtitle = 'Only statistically significant (p<=0.05) correlation coefficients are shown'
   )
 }
+```
 
-map_correlations('Flash Flood')
+# Deadly Storm Event Predictor
+
+```{r}
+details <- details %>% 
+  mutate(
+    deadly = case_when(
+      deaths_direct > 0 | deaths_indirect > 0 ~ 'Deadly',
+      TRUE ~ 'Not Deadly'
+    )
+  )
+
+model_data <- details %>% 
+  select(
+    begin_dt, region, event_type, deadly
+  )
+
+model_data <- model_data %>% 
+  sample_n(
+    1000000
+  )
+```
+
+```{r}
+set.seed(1)
+storm_split <- initial_split(model_data)
+storm_train <- training(storm_split)
+storm_test  <- testing(storm_split)
+```
+
+```{r}
+storm_rec_1 <- recipe(
+  deadly ~ .,
+  data = storm_train
+) %>% 
+  step_dummy(all_nominal(), -all_outcomes())
+
+storm_mod_1 <- logistic_reg() %>%
+  set_engine("glm") %>% 
+  set_mode("classification")
+  
+storm_wflow_1 <- workflow() %>%
+  add_recipe(storm_rec_1) %>%
+  add_model(storm_mod_1)
+```
+
+```{r}
+library(doParallel)
+registerDoParallel(cores = detectCores() - 1)
+
+storm_fit_1 <- fit(storm_wflow_1, data = storm_train)
+```
+
+```{r}
+storm_pred <- predict(
+  storm_fit_1, 
+  storm_test, 
+  type = "prob"
+) %>%
+  bind_cols(
+    storm_test
+  )
+```
+
+```{r}
+storm_pred <- storm_pred %>% 
+  mutate(
+    deadly = as.factor(deadly)
+  )
+
+storm_pred %>%
+  roc_curve(
+    truth = deadly,
+    .pred_Deadly,
+    event_level = "first"
+  ) %>%
+  autoplot() +
+  labs(
+    title = 'ROC Curve for Deadly Storm Predictor',
+    x = 'False Positive Rate / 1 - Specificity',
+    y = 'True Positive Rate / Sensitivity'
+  ) +
+  geom_text(
+    x = 0.6,
+    y = 0.45,
+    label = 'AUC = 0.87'
+  )
+
+```
+
+```{r}
+auc_score <- storm_pred %>% 
+  roc_auc(
+    truth = deadly,
+    .pred_Deadly,
+    event_level = "first"
+  )
+
+auc_score
+```
+
+```{r}
+storm_pred <- storm_pred %>% 
+  mutate(
+    prediction = case_when(
+      .pred_Deadly >= 0.5 ~ 'Deadly',
+      TRUE ~ 'Not Deadly'
+    ),
+    prediction = as.factor(prediction)
+  )
+
+conf_matrix <- conf_mat(
+  data = storm_pred,
+  truth = deadly,
+  estimate = prediction
+)
+
+confusion <- tibble(
+  truth = c('Deadly', 'Not Deadly', 'Deadly', 'Not Deadly'),
+  prediction = c('Deadly', 'Not Deadly', 'Not Deadly', 'Deadly'),
+  n = c(160, 248085, 1666, 89)
+)
+```
+
+```{r}
+confusion %>% 
+  ggplot(
+    mapping = aes(
+      x = truth, 
+      y = prediction
+    )
+  ) +
+  geom_tile(fill = "steelblue",
+            color = "black",
+            size = 0.5
+  ) +
+  geom_text(
+    mapping = aes(
+      label = n
+    ), 
+    color = "black", 
+    size = 5
+  ) +
+  theme_minimal() +
+  labs(
+    title = "Confusion Matrix for Deadly Storm Predictor",
+    x = "Model Prediction", 
+    y = "Truth"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1), 
+    legend.position = 'none'
+  )
+```
+
+```{r}
+test <- storm_fit_1 %>% 
+  tidy()
+```
+
+```{r}
+storm_pred %>% 
+  mutate(
+    result = case_when(
+      deadly == prediction ~ 'Correct',
+      TRUE ~ 'Incorrect'
+    )
+  ) %>% 
+    group_by(
+      result
+    ) %>% 
+      summarise(
+        percentage = n()/250000*100
+      )
 ```
 

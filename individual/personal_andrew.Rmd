@@ -23,28 +23,19 @@ fatalities = read_rds('../data/clean_data/fatalities_clean.rds')
 
 fatalities %>%
   ggplot(mapping = aes(x = fatality_age)) +
-    geom_histogram(binwidth = 4) #shows how many people from 4 year age groups have passed from weather events
+    geom_histogram(binwidth = 4) +
+  labs(x="Ages", y ="Number of fatalities", title="Frequency Plot of Fatalities With Respect to Age") +
+  theme_bw()
 
+#shows how many people from 4 year age groups have passed from weather events
 
-
-```
-
-```{r median age group}
-
-median_fatality <- filter(fatalities, fatality_age < 70 & fatality_age > 13)
-  
-events<- details %>% select(event_id, event_type)
-
-right_join(events, median_fatality) %>%
-  group_by(event_type) %>%
-  count(event_type) %>%
-  na.omit %>%
-  arrange(desc(n)) # most fatal weather events for 14 - 69 year olds
-
+# 3524 fatalities with NA value for age, 2418 for sex
 
 ```
 
 ```{r seperate weather events}
+
+events<- details %>% select(event_id, event_type)
 
 #seperating events into categories
 # Marine - water related events or events relating to bodies of water
@@ -75,7 +66,7 @@ events <-events %>%
     event_type == "Sneakerwave" ~ "Marine",
     event_type == "Marine Lightning" ~ "Marine",
     event_type == "Marine Tropical Depression" ~ "Marine",
-    event_type == ("Marine Hurricane/Typhoon") ~ "Marine",
+    event_type == "Marine Hurricane/Typhoon" ~ "Marine",
     event_type == "Marine Dense Fog" ~ "Marine",
     event_type == "Avalanche" ~ "Ice/Snow",
     event_type == "Blizzard" ~ "Ice/Snow",
@@ -115,13 +106,30 @@ events <-events %>%
 
 ```
 
+
+```{r median age group}
+
+median_fatality <- filter(fatalities, fatality_age < 70 & fatality_age > 13)
+  
+median_fatality <- right_join(events, median_fatality)
+
+right_join(events, median_fatality) %>%
+  group_by(event_type) %>%
+  count(event_type) %>%
+  na.omit %>%
+  arrange(desc(n)) # most fatal weather events for 14 - 69 year olds
+
+
+```
+
+
 ```{r old age group}
 
-elderly_fatality <- filter(fatalities, fatality_age >= 70) %>%
-  select(event_id)
+elderly_fatality <- filter(fatalities, fatality_age >= 70)
   
 elderly_fatality <- right_join(events, elderly_fatality)
 
+# ---
 
 elderly_fatality %>%
   group_by(weather_cat) %>%
@@ -135,14 +143,17 @@ elderly_fatality %>%
   na.omit()%>%
   arrange(desc(n))
 
+# ---
+
 ```
 
 ```{r young age group}
 
-young_fatality <- filter(fatalities, fatality_age <= 13) %>%
-  select(event_id)
+young_fatality <- filter(fatalities, fatality_age <= 13) 
   
 young_fatality <- right_join(events, young_fatality)
+
+# ---
 
 young_fatality %>%
   group_by(event_type) %>%
@@ -150,7 +161,167 @@ young_fatality %>%
   na.omit() %>%
   arrange(desc(n))
 
+# ---
+
+```
+
+
+```{r}
+
+# which category affects each age group the most
+
+median_fatality %>% # count of each weather category fatalities, this is plotted below
+  group_by(weather_cat) %>%
+  count() %>%
+  na.omit()%>%
+  arrange(desc(n))
+
+elderly_fatality %>%
+  group_by(weather_cat) %>%
+  count() %>%
+  na.omit()%>%
+  arrange(desc(n))
+
+young_fatality %>%
+  group_by(weather_cat) %>%
+  count() %>%
+  na.omit()%>%
+  arrange(desc(n))
+
 
 
 ```
 
+```{r}
+
+# Combining fatalities
+
+median_fatality <- median_fatality %>%
+  add_column(age_group = "median")
+
+elderly_fatality <- elderly_fatality %>%
+  add_column(age_group = "elderly")
+
+young_fatality <- young_fatality %>%
+  add_column(age_group = "young")
+
+old_young <- rbind(elderly_fatality, young_fatality)
+combine_fatality <- rbind(old_young, median_fatality)
+
+```
+
+```{r}
+
+# plot of age groups and fatality type
+
+ggplot(na.omit(combine_fatality), aes(x=age_group, fill=weather_cat)) +
+  geom_bar(position = "fill") +
+  scale_fill_brewer(palette = "Dark2") +
+  labs(x= "Age group", y= "Proportion of fatalities for each category", fill= "Weather Categories", title = "Proportion of Each Age Group Affected by Each Weather Category") +
+  theme_bw() # Proportion of each age group affected by different weather categories labelled above
+
+```
+
+```{r}
+
+# Elderly - where is it affected?
+
+# most affected by fire hi temps and tropical unlike the median category
+
+elderly_category <- filter(elderly_fatality, weather_cat == "Fire/HiTemps" | weather_cat == "Tropical") %>%
+ggplot(aes(x=event_type, fill=weather_cat)) +
+  geom_bar() +
+  scale_fill_brewer(palette = "Dark2") +
+  labs(x ="Weather Event", y ="Amount of Fatalities", title="Elderly Fatalities by Most Popular Weather Categories", fill="Weather Category") +
+  theme_bw()+
+  coord_flip() 
+
+elderly_category
+
+# elderly age group plotted against disproportionate weather categories affecting them
+
+# ---
+
+elderly_fatality %>%
+  filter(weather_cat == "Fire/HiTemps" | weather_cat == "Tropical") %>%
+  group_by(event_type) %>%
+  count() %>%
+  na.omit()%>%
+  arrange(desc(n))
+
+```
+
+```{r}
+
+# Young - Where is it affected?
+
+young_category <- filter(young_fatality, weather_cat == "Marine" | weather_cat == "Atmospheric") %>%
+ggplot(aes(x=event_type, fill=weather_cat)) +
+  geom_bar() +
+  scale_fill_brewer(palette = "Dark2") +
+  labs(x ="Weather Event", y ="Amount of Fatalities", title="Young Fatalities by Most Popular Weather Categories", fill="Weather Category") +
+  theme_bw()+
+  coord_flip() # young fatality age group plotted with the 2 largest disproportionate causes of fatalities
+
+young_category
+
+# ---
+
+young_fatality %>%
+  filter(weather_cat == "Marine" | weather_cat == "Atmospheric") %>%
+  group_by(event_type) %>%
+  count() %>%
+  na.omit()%>%
+  arrange(desc(n))
+
+```
+
+```{r}
+
+# How has weather fatalities changed over time?
+
+combine_facet <- ggplot(na.omit(combine_fatality), aes(x=age_group, fill=weather_cat)) +
+  geom_bar(position = "fill") +
+  scale_fill_brewer(palette = "Dark2") +
+  labs(x= "Age group", y= "Proportion of fatalities for each category over time", fill= "Weather Categories", title = "Proportion of Each Age Group Affected by Each Weather Category") +
+  scale_x_discrete(labels = c(
+    "elderly" = "E",
+    "median" = "M",
+    "young" = "Y"
+  )) +
+  theme_bw() +
+  theme(axis.text.y = element_blank()) +
+  facet_wrap(year(ymd)~.) 
+
+# proportionality of weather categories and fatality over years
+
+combine_facet
+
+```
+
+```{r}
+
+# are Fire/HiTemps increasing?
+
+combine_lines <- filter(combine_fatality, weather_cat == "Fire/HiTemps") %>%
+  ggplot(aes(x=year(ymd), colour=event_type)) +
+  geom_line(aes(fill=..count..),stat="bin", binwidth = 1, linewidth = 1) +
+  labs(x="Years",y="Amount of Fatalities",title="Amount of Fire and High Temperature Fatalities Over Time",colour="Event Types") +
+  scale_colour_manual(values=c("midnightblue", "purple2", "mediumorchid2")) +
+  theme_bw() 
+
+# plot looks at the changes of Fire/HiTemps weather_cat over years
+
+combine_lines
+
+# ---
+
+combine_hist <- filter(na.omit(combine_fatality), weather_cat == "Fire/HiTemps" & year(ymd) >= "1995" & year(ymd) <= "2008") %>%
+  ggplot(aes(x=year(ymd))) +
+  geom_histogram(binwidth = 1) +
+  labs(y="Amount of fatalities",x="Years",title="Unusually High Fire and High Temperature Fatalities Between 1998 and 2003") +
+  theme_bw() # Histogram plot of extraordinary data between 1998 and 2003
+
+combine_hist
+
+```

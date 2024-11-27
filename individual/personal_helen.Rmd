@@ -22,6 +22,8 @@ details = read_rds('../data/clean_data/details_clean.rds')
 fatalities = read_rds('../data/clean_data/fatalities_clean.rds')
 ```
 
+# Organise Data for ENSO Analysis
+
 ```{r}
 #remove irrelevant variables for ENSO analysis
 details_smaller <- details %>% 
@@ -56,6 +58,151 @@ details_enso <- details_smaller %>%
          TRUE ~ 'neutral'
   ))
 ```
+
+# Explore Change in Event Numbers Over Time (Based on ENSO Status)
+
+```{r}
+slope_exploration <- details_enso %>%
+  #group events by month
+  group_by(floor_date = floor_date(begin_dt, 'month')) %>% 
+  #find proportions that each event accounts for in different types of years
+  summarise(n = n(), enso_status = unique(enso_status))
+  
+#plot with points
+slope_exploration %>% 
+  ggplot(mapping = aes(x=floor_date, y = log(n), color = enso_status)) +
+  geom_point() +
+  geom_smooth(method = lm, se= FALSE) +
+  scale_color_manual(values = c('el_nino' = 'midnightblue',
+                                'neutral' = 'purple2', 
+                                'la_nina' = 'mediumorchid2'
+                                ),
+    labels = c('El Niño', 'Neutral', 'La Niña')
+  ) +
+  labs(
+    x="Date",
+    y="Number of Events per Month (log scale)",
+    title="Event Count Over Time, Grouped by ENSO Status",
+    subtitle = "Includes Monthly Observations and Linear Model",
+    color = 'ENSO Status'
+  )
+  
+#plot with only lm
+slope_exploration %>% 
+  ggplot(mapping = aes(x=floor_date, y = log(n), color = enso_status)) +
+  geom_smooth(method = lm, se= FALSE) +
+  scale_color_manual(values = c('el_nino' = 'midnightblue',
+                                'neutral' = 'purple2', 
+                                'la_nina' = 'mediumorchid2'
+                                ),
+    labels = c('El Niño', 'Neutral', 'La Niña')) +
+  labs(
+    x="Date",
+    y="Number of Events per Month (log scale)",
+    title="Event Count Over Time, Grouped by ENSO Status",
+    subtitle = "Includes Only Linear Model",
+    color = 'ENSO Status'
+  )
+  
+```
+
+```{r}
+by_month_en <- details_enso %>%
+  filter(enso_status == 'el_nino') %>% 
+  group_by(en_floor_date = floor_date(begin_dt, 'month')) %>% 
+  summarise(n = n(), enso_status = unique(enso_status))
+
+by_month_ln <- details_enso %>%
+  filter(enso_status == 'la_nina') %>% 
+  group_by(ln_floor_date = floor_date(begin_dt, 'month')) %>% 
+  summarise(n = n(), enso_status = unique(enso_status))
+
+by_month_n <- details_enso %>%
+  filter(enso_status == 'neutral') %>% 
+  group_by(n_floor_date = floor_date(begin_dt, 'month')) %>% 
+  summarise(n = n(), enso_status = unique(enso_status))
+```
+
+
+```{r}
+bootstrapping <- function(df, floor_name){
+  # set a seed
+  set.seed(30305)
+  floor_name <- sym(floor_name)
+  
+  # take 1000 bootstrap samples
+  enso_boot <- bootstraps(df, times = 1000)
+  
+  # for each sample
+  # fit a model and save output in model column
+  # tidy model output and save in coef_info column 
+  enso_slope_models <- enso_boot %>%
+    mutate(
+      model = map(splits, ~ lm(n ~ !!floor_name, data = .)),
+      coef_info = map(model, tidy)
+    )
+    
+  # unnest coef_info (for intercept and slope)
+  enso_coefs <- enso_slope_models %>%
+    unnest(coef_info)
+    
+  # calculate 95% (default) percentile interval
+  int_pctl(enso_slope_models, coef_info)
+}
+
+el_nino_slope <- bootstrapping(by_month_en, 'en_floor_date')
+View(el_nino_slope)
+la_nina_slope <- bootstrapping(by_month_ln, 'ln_floor_date')
+View(la_nina_slope)
+neutral_slope <- bootstrapping(by_month_n, 'n_floor_date')
+View(neutral_slope)
+
+```
+
+```{r}
+el_nino_slope$enso_status <- "el_nino"
+la_nina_slope$enso_status <- "la_nina"
+neutral_slope$enso_status <- "neutral"
+
+combined_slopes <- dplyr::bind_rows(el_nino_slope, neutral_slope, la_nina_slope)
+
+combined_slopes %>% 
+  filter(term != '(Intercept)') %>% #removes intercept error bars
+  
+  ggplot(mapping = aes(x = enso_status, y = .estimate, fill = enso_status)) +
+  
+  geom_bar(stat = "identity", position = position_dodge(width = 0.8)) + 
+  
+  geom_errorbar(aes
+                (ymin = .lower, ymax = .upper), 
+                position = position_dodge(width = 0.8),
+                width = 0.25
+                ) +
+  
+  scale_fill_manual(values = c('el_nino' = 'midnightblue',
+                                'neutral' = 'purple2', 
+                                'la_nina' = 'mediumorchid2'
+                                ),
+  labels = c('El Niño', 'La Niña', 'Neutral')
+  ) +
+  
+  scale_x_discrete(
+    labels = c('el_nino' = 'El Niño', 
+               'la_nina' = 'La Niña', 
+               'neutral' = 'Neutral'
+               )
+    ) +
+  
+  labs(
+    x="ENSO Status",
+    y="True Slope (of log-scaled model)",
+    title="Bootstrapped Linear Model Slopes by ENSO Status",
+  ) +
+  
+  theme(legend.position = 'none')
+```
+
+
 
 ```{r}
 #calculate proportion of total events by event type for el nino years
@@ -109,6 +256,9 @@ proportions_enso %>%
 ```
 
 ```{r, eval=FALSE}
+#I'm going to keep working on this, but it's quite difficult and I doubt it'll
+#be ready in time for the presentation
+
 #tears of sadness
 enso_knn <- details_enso %>% 
   select(event_id, 
@@ -158,4 +308,13 @@ enso_pred_1
 
 Source = <https://psl.noaa.gov/enso/past_events.html> added 2023 as an el nino year, find source for that as well. Note the caveat with events vs episodes
 
-
+```{r}
+#create frequency table of ENSO events
+details_enso %>% 
+  group_by(enso_status) %>% 
+  summarise(count = n(),
+            prop = n()/nrow(details_enso),
+            exp_prop = length(unique(year(begin_dt)))
+            /length(unique(year(details_enso$begin_dt)))
+  )
+```
