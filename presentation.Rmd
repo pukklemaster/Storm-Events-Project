@@ -21,6 +21,14 @@ xaringanExtra::use_panelset()
 library(knitr)
 ```
 
+```{css, echo=FALSE}
+
+body{
+font-family: "Verdana";
+}
+
+```
+
 ```{r setup, include=FALSE}
 # For better figure resolution
 knitr::opts_chunk$set(fig.retina = 3, dpi = 300, fig.width = 6, fig.asp = 0.618, out.width = "80%")
@@ -64,10 +72,10 @@ class: center, middle
 -Lets look at the distribution of ages in the fatalities in the United States.
 --
 
-.center[<img src="individual/personal_andrew/age-hist.png" width="560" height="400" />]
 
+
+.center[<img src="individual/personal_andrew/age-hist.png" width="560" height="400" />]
 ---
-# What weather events affect each age category the most?
 
 .panelset[
 .panel[
@@ -94,7 +102,86 @@ ggplot(na.omit(combine_fatality), aes(x=age_group, fill=weather_cat)) +
 .panel[
 .panel-name[Plot]
 
-.center[<img src="individual/personal_andrew/prop-bar.png" width="532" height="380" />]
+.center[<img src="individual/personal_andrew/prop-bar.png" width="840" height="600" />]
+
+]
+]
+
+---
+## What is happening to the elderly and youngest?
+
+.panelset[
+.panel[
+.panel-name[Younest Code]
+
+```{r Bar of youngest, eval=FALSE}
+
+# Young - Where is it affected?
+
+young_category <- filter(young_fatality, 
+                         weather_cat == "Marine" | 
+                           weather_cat == "Atmospheric") %>%
+ggplot(aes(x=event_type, fill=weather_cat)) +
+  geom_bar() +
+  scale_fill_brewer(palette = "Dark2") +
+  labs(x ="Weather Event", 
+       y ="Amount of Fatalities", 
+       title="Young Fatalities by Most Popular Weather Categories", 
+       fill="Weather Category") +
+  theme_bw()+
+  coord_flip() 
+
+# young fatality age group plotted 
+# with the 2 largest disproportionate 
+# causes of fatalities
+
+young_category
+
+```
+
+]
+
+.panel[
+.panel-name[Youngest Plot]
+
+.center[<img src="individual/personal_andrew/young-bar.png" width="630" height="450" />]
+
+]
+
+
+.panel[
+.panel-name[Elderly Code]
+
+```{r Elderly plot code, eval=FALSE}
+
+# Elderly - where is it affected?
+
+# most affected by fire hi temps and tropical
+# unlike the median category
+
+elderly_category <- filter(elderly_fatality, 
+                           weather_cat == "Fire/HiTemps" | 
+                             weather_cat == "Tropical") %>%
+ggplot(aes(x=event_type, fill=weather_cat)) +
+  geom_bar() +
+  scale_fill_brewer(palette = "Dark2") +
+  labs(x ="Weather Event", 
+       y ="Amount of Fatalities", 
+       title="Elderly Fatalities by Most Popular Weather Categories", 
+       fill="Weather Category") +
+  theme_bw()+
+  coord_flip() 
+
+elderly_category
+
+```
+
+]
+
+.panel[
+.panel-name[Elderly Plot]
+
+.center[<img src="individual/personal_andrew/young-bar.png" width="630" height="450" />]
 
 ]
 ]
