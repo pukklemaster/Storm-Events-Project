@@ -57,7 +57,14 @@ class: center, middle
 # (Helen)
 
 ---
-# (Andrew)
+# What types of weather affect different age groups the most?
+
+-Lets look at the distribution of ages in the fatalities in the United States.
+--
+
+
+
+.center[<img src="individual/personal_andrew/age-hist.png" width="560" height="400" />]
 
 ---
 # Summary
