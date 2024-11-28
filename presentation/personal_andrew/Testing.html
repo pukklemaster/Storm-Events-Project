@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="" xml:lang="">
   <head>
-    <title>Weather in the United States</title>
+    <title>AAAAA</title>
     <meta charset="utf-8" />
     <meta name="author" content="Just Commit   Olivia Harris, Adam Laycock, Helen Miller,   Andrew Morris, Max Pohlman, Sarah Stewart" />
     <meta name="date" content="2024-11-28" />
@@ -15,44 +15,33 @@
 class: center, middle, inverse, title-slide
 
 .title[
-# Weather in the United States
+# AAAAA
 ]
 .subtitle[
-## <span style="font-size:40px;">Data analysis that will blow you away</span>
+## Presentation subtitle (if any)
 ]
 .author[
-### <span style="font-size:30px;">Just Commit <br> Olivia Harris, Adam Laycock, Helen Miller, <br> Andrew Morris, Max Pohlman, Sarah Stewart</span>
+### Just Commit <br> Olivia Harris, Adam Laycock, Helen Miller, <br> Andrew Morris, Max Pohlman, Sarah Stewart
 ]
 .institute[
-### <span style="font-size:30px;">University of Edinburgh</span>
+### University of Edinburgh
 ]
 .date[
-### <span style="font-size:30px;">2024-11-28</span>
+### 2024-11-28
 ]
 
 ---
 
 
 
-<<<<<<< HEAD
+
 &lt;style type="text/css"&gt;
-&lt;style&gt;
-.scrollable-panel {
-  max-height: 400px; 
-  overflow-y: auto; 
-  overflow-x: auto; 
-  padding: 10px;    
-  background-color: #f7f7f7; 
-  border: 1px solid #ddd; 
-  border-radius: 5px;
+
+body{
+font-family: "Arial";
 }
+
 &lt;/style&gt;
-=======
->>>>>>> c63eb8104aa194bbc011503c64c614a0c9b83f10
-
-
-
-
 
 
 
@@ -74,233 +63,29 @@ class: center, middle
 # How have storm events changed over time, and what are the personal and monetary effects of these changes?
 
 ---
-### Are the number of storm events changing over time? 
-
-.panelset[
-.panel[
-.panel-name[Code]
-
-
-``` r
-# Making variable year
-
-details$year &lt;- as.numeric(format(details$begin_dt, "%Y"))
-events_per_year &lt;- aggregate(event_id ~ year, data = details, FUN = length)
-names(events_per_year) &lt;- c("year", "event_count") 
-model3 &lt;- lm(event_count ~ year, data = events_per_year)
-
-summary(model3)
-
-# Visualising
-
-ggplot(events_per_year, aes(x = year, y = event_count)) +
-  geom_point() +  
-  geom_smooth(method = "lm", se = TRUE, color = "purple2", linetype = "solid", size = 1) + 
-  labs(title = "Event Count Over Time",
-       x = "Year",
-       y = "Number of Events") +
-  theme_minimal()
-```
-]
-
-.panel[
-.panel-name[Plot]
-
-.center[&lt;img src="FrequencyTime.01.png" width="700" height="450" /&gt;]
-
-]
-]
----
-### Which event type frequencies are changing the most?
-Used linear regression to evaluate the correlation between the event count of a certain event and year to determine which event types were becoming more frequent and which were becoming less frequent. 
-
-Large 'year' co-efficients show the potential impacts of climate change as weather patterns are changing over time.
-
-5 largest Co-efficients:    
-Thunderstorm Wind (295.68), Winter Weather (140.25), Drought (112.31) , Marine Thunderstorm Wind (92.23), Excessive Heat (74.35)
-
-5 Smallest Coefficients:
-Hail (-145.45), Heavy Snow (-39.68), Lightning (-27.64), Ice Storm (-21.35), Cold Wind/ Chill (-19.89)
+# Dataset Overview (Liv)
 
 ---
-
-.panelset[
-.panel[
-.panel-name[Damages]
-.center[&lt;img src="DamagesTime.35.png" width="750" height="550" /&gt;]
-]
-
-.panel[
-.panel-name[Fatalities]
-
-.center[&lt;img src="FatalitiesTime.png" width="750" height="550" /&gt;]
-
-]
-]
+# Severity of Storms (Sarah)
 
 ---
-.panelset[
-.panel[
-.panel-name[Frequency] 
-## Frequency of weather events across the US
-.pull-left[&lt;img src="frequncy.png" width="520" height="350" /&gt;]
-.pull-right[&lt;img src="Severe_frequncy.png" width="520" height="350" /&gt;]
-]
-.panel[
-.panel-name[Fatalities]
-##Number of fatalities across the US
-.center[&lt;img src="fatalities_frequency.png" width="800" height="460" /&gt;]
-]
-.panel[
-.panel-name[Total Damage]
-##Total damage caused by severe events
-.center[&lt;img src="severe_damage.png" width="800" height="460" /&gt;]
-]
-]
+# Geospatial Correlations (Adam)
 
 ---
-# Expanding on Damages
-&lt;img src="Damage by Event Type.jpg" width="85%" style="display: block; margin: auto;" /&gt;
----
-# A Closer Look at Event Severity
-### Using K-means Clustering
-.panelset[
-.panel[.panel-name[Visualisation]
-&lt;img src="Clustering.jpg" width="57%" style="display: block; margin: auto;" /&gt;
-]
-.panel[.panel-name[Table]
-
-Table: Cluster Data Summary
-
-|Cluster                       | Total Events|
-|:-----------------------------|------------:|
-|Low Damage / Low Casualities  |       909757|
-|High Damage / Low Casualities |          173|
-|Low Damage / High Casualities |           43|
-]
-]
+# (Max)
 
 ---
-# How Have Storms Changed?
-#### Grouped by severity relative to fatality and damages averages
-.panelset[
-.panel[.panel-name[Total Averages]
-&lt;div class="row" style="display: flex; align-items: flex-start;"&gt;
+# (Helen)
 
-&lt;div class="column" style="flex: 1;"&gt;
-&lt;img src="Global Averages.png" width="100%" /&gt;
-&lt;/div&gt; &lt;div class="column" style="flex: 1; padding-left: 20px;"&gt;
-&lt;li&gt;Event types were split into less/more damaging/deadly based on if their average total fatalities or damages exceeded or was short of the average for all events during the testing period.
-&lt;br&gt;
-&lt;br&gt;
-&lt;br&gt;
-&lt;li&gt;The substantial variance in between the less/more groups for each variable indicate a non-standard distribution of data, with events tending to be either highly severe, or rarely showing an impact.
-&lt;/div&gt; &lt;/div&gt;
-]
-
-.panel[.panel-name[1996-7 Averages]
-&lt;div class="row" style="display: flex; align-items: flex-start;"&gt;
-
-&lt;div class="column" style="flex: 1;"&gt;
-&lt;img src="1996-7 Averages.png" width="100%" /&gt;
-&lt;/div&gt; &lt;div class="column" style="flex: 1; padding-left: 20px;"&gt;
-&lt;li&gt;The fatalities average for all events over this period was 1.174728e-01
-&lt;li&gt;The damages average was 1.713981e+06	
-&lt;br&gt;
-&lt;br&gt;
-&lt;br&gt;
-&lt;li&gt;It may be noted that numbers for both damages and fatalities - for both less/more groups - are greater than the total average across the data-set.
-&lt;br&gt;
-&lt;br&gt;
-&lt;br&gt;
-&lt;li&gt;This increase may be interpreted as this period having greater storm severity, or this period having a lack of storm-resilient infrastructure.
-&lt;/div&gt; &lt;/div&gt;
-]
-
-.panel[.panel-name[2022-3 Averages]
-&lt;div class="row" style="display: flex; align-items: flex-start;"&gt;
-
-&lt;div class="column" style="flex: 1;"&gt;
-&lt;img src="2022-3 Averages.png" width="100%" /&gt;
-&lt;/div&gt; &lt;div class="column" style="flex: 1; padding-left: 20px;"&gt;
-&lt;li&gt;The fatalities average for all events over this period was 1.162609e-01
-&lt;li&gt;The damages average was 7.683527e+05	
-&lt;br&gt;
-&lt;br&gt;
-&lt;li&gt;Comparing these results with those from the beginning of the dataset, 1996-7, we can calculate the percent changes in average fatalities (-1.031671%) and damages (-55.171452%).
-&lt;br&gt;
-&lt;li&gt;This is more drastic when looking at percent changes across groups:&lt;br&gt;
-Percent change (less) fatalities: -33.33333%&lt;br&gt;
-Percent change (more) fatalities: -48.59813%&lt;br&gt;
-Percent change (less) damages: -87.89507%&lt;br&gt;
-Percent change (more) damages: -6.966879%&lt;br&gt;
-&lt;br&gt;
-&lt;li&gt;Numbers went down across the board, making change in infrastructure over the years being an interesting future expansion to this project
-&lt;/div&gt; &lt;/div&gt;
-]
-.panel[.panel-name[Code]
-
-``` r
-#### Adjusted Graph for Fatalities (All Data)
-fatality_graph &lt;- details_grouped %&gt;%
-  ggplot(aes(x = fatality_group, 
-             y = avg_fatalities_by_type, 
-             fill = fatality_group)) +
-  stat_summary(fun = "mean", geom = "bar", position = "dodge", alpha = 0.7) +
-    geom_text(stat = "summary", fun = "mean", aes(label = round(after_stat(y), 2)), 
-            vjust = -0.5, size = 3) +
-  scale_fill_manual(values = c("More Deadly" = "red", "Less Deadly" = "green")) +
-  labs(
-    title = "Average Fatalities by Group",
-    subtitle = "Based on Event Type Averages Compared to Global Average",
-    x = "Weather Group",  
-    y = "Average Fatalities per Event Type",
-    fill = NULL
-  ) +
-  # There was some more theme and formatting, but there was no space
-  )
-```
-]  
-]
----
-## Storm Events and ENSO
-### Background: What is ENSO?
-- Natural interannual climate event
-- Image adapted from: https://iri.columbia.edu/our-expertise/climate/enso/enso-essentials/
-
-&lt;img src="el_nino.png" width="25%" /&gt;&lt;img src="neutral.png" width="25%" /&gt;&lt;img src="la_nina.png" width="25%" /&gt;
-### In the Eastern Pacific...
-
-&lt;div style="display: flex; justify-content: space-between; align-items: flex-end; height: 100px;"&gt;
-  &lt;div style="width: 45%; text-align: left;"&gt;
-    &lt;strong&gt;El Niño:&lt;/strong&gt;
-    &lt;ul&gt;
-      &lt;li&gt;Increased rainfall&lt;/li&gt;
-      &lt;li&gt;Warmer than normal&lt;/li&gt;
-      &lt;li&gt;Decreased oceanic productivity&lt;/li&gt;
-    &lt;/ul&gt;
-  &lt;/div&gt;
-  &lt;div style="width: 45%; text-align: left;"&gt;
-    &lt;strong&gt;La Niña:&lt;/strong&gt;
-    &lt;ul&gt;
-      &lt;li&gt;Decreased rainfall&lt;/li&gt;
-      &lt;li&gt;Cooler than normal&lt;/li&gt;
-      &lt;li&gt;Increased oceanic productivity&lt;/li&gt;
-    &lt;/ul&gt;
-  &lt;/div&gt;
-&lt;/div&gt;
----
-### Can we see the impact of ENSO in our data?
-&lt;img src="events_enso.png" width="auto" height="520" /&gt;
 ---
 # What types of weather affect different age groups the most?
 
--Let's look at the distribution of ages in the fatalities in the United States.
+-Lets look at the distribution of ages in the fatalities in the United States.
 --
 
 
 
-.center[&lt;img src="personal_andrew/age-hist.png" width="560" height="400" /&gt;]
+.center[&lt;img src="age-hist.png" width="560" height="400" /&gt;]
 ---
 
 .panelset[
@@ -327,17 +112,17 @@ ggplot(na.omit(combine_fatality), aes(x=age_group, fill=weather_cat)) +
 .panel[
 .panel-name[Plot]
 
-.center[&lt;img src="personal_andrew/prop-bar.png" width="840" height="600" /&gt;]
+.center[&lt;img src="prop-bar.png" width="840" height="600" /&gt;]
 
 ]
 ]
 
 ---
-### What is happening to the elderly and youngest?
+## What is happening to the elderly and youngest?
 
 .panelset[
 .panel[
-.panel-name[Youngest Code]
+.panel-name[Younest Code]
 
 
 ``` r
@@ -368,7 +153,7 @@ young_category
 .panel[
 .panel-name[Youngest Plot]
 
-.center[&lt;img src="personal_andrew/young-bar.png" width="630" height="450" /&gt;]
+.center[&lt;img src="young-bar.png" width="630" height="450" /&gt;]
 
 ]
 
@@ -404,12 +189,12 @@ elderly_category
 .panel[
 .panel-name[Elderly Plot]
 
-.center[&lt;img src="personal_andrew/elderly-bar.png" width="630" height="450" /&gt;]
+.center[&lt;img src="elderly-bar.png" width="630" height="450" /&gt;]
 
 ]
 ]
 ---
-### How has this changed over time?
+## How has this changed over time?
 
 .panelset[
 .panel[
@@ -442,7 +227,7 @@ combine_facet
 .panel[
 .panel-name[Plot]
 
-.center[&lt;img src="personal_andrew/prop-bar-time.png" width="630" height="450" /&gt;]
+.center[&lt;img src="prop-bar-time.png" width="630" height="450" /&gt;]
 
 ]
 
@@ -477,16 +262,20 @@ combine_lines
 ]
 
 .panel[
-.panel-name[Plot]
+.panel-name[plot]
 
-.center[&lt;img src="personal_andrew/fire-heat-lines.png" width="630" height="450" /&gt;]
+.center[&lt;img src="fire-heat-lines.png" width="630" height="450" /&gt;]
+
+]
 
 ]
 
-]
 
 ---
-class: center, middle
+
+# Summary
+
+---
 # Questions?
     </textarea>
 <style data-target="print-only">@media screen {.remark-slide-container{display:block;}.remark-slide-scaler{box-shadow:none;}}</style>

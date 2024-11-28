@@ -1,9 +1,9 @@
 ---
-title: "AAAAA"
-subtitle: "Presentation subtitle (if any)"
-author: "Just Commit <br> Olivia Harris, Adam Laycock, Helen Miller, <br> Andrew Morris, Max Pohlman, Sarah Stewart"
-institute: "University of Edinburgh"
-date: "`r Sys.Date()`"
+title: "Weather in the United States"
+subtitle: "<span style='font-size:40px;'>Data analysis that will blow you away</span>"
+author: "<span style='font-size:30px;'>Just Commit <br> Olivia Harris, Adam Laycock, Helen Miller, <br> Andrew Morris, Max Pohlman, Sarah Stewart</span>"
+institute: "<span style='font-size:30px;'>University of Edinburgh</span>"
+date: "<span style='font-size:30px;'>`r Sys.Date()`</span>"
 output:
   xaringan::moon_reader:
     css: xaringan-themer.css
@@ -22,6 +22,7 @@ library(knitr)
 library(xaringanExtra)
 ```
 
+<<<<<<< HEAD
 ```{css, echo=FALSE}
 <style>
 .scrollable-panel {
@@ -39,12 +40,25 @@ body{
 font-family: "Verdana";
 }
 
+=======
+```{r xaringan-themer, include=FALSE, warning=FALSE}
+library(xaringanthemer)
+style_mono_accent(
+  base_color = "#308068",
+  header_font_google = google_font("Varela Round"),
+  text_font_google   = google_font("Geist", "300", "300i"),
+  code_font_google   = google_font("Fira Mono")
+)
+>>>>>>> c63eb8104aa194bbc011503c64c614a0c9b83f10
 ```
 
 ```{r setup, include=FALSE}
 # For better figure resolution
 knitr::opts_chunk$set(fig.retina = 3, dpi = 300, fig.width = 6, fig.asp = 0.618, out.width = "80%")
 ```
+
+
+
 
 # Dataset Background
 
@@ -64,13 +78,94 @@ class: center, middle
 # How have storm events changed over time, and what are the personal and monetary effects of these changes?
 
 ---
-# Dataset Overview (Liv)
+### Are the number of storm events changing over time? 
+
+.panelset[
+.panel[
+.panel-name[Code]
+
+```{r Proportion to age cat2, eval= FALSE}
+
+# Making variable year
+
+details$year <- as.numeric(format(details$begin_dt, "%Y"))
+events_per_year <- aggregate(event_id ~ year, data = details, FUN = length)
+names(events_per_year) <- c("year", "event_count") 
+model3 <- lm(event_count ~ year, data = events_per_year)
+
+summary(model3)
+
+# Visualising
+
+ggplot(events_per_year, aes(x = year, y = event_count)) +
+  geom_point() +  
+  geom_smooth(method = "lm", se = TRUE, color = "purple2", linetype = "solid", size = 1) + 
+  labs(title = "Event Count Over Time",
+       x = "Year",
+       y = "Number of Events") +
+  theme_minimal()
+
+```
+]
+
+.panel[
+.panel-name[Plot]
+
+.center[<img src="FrequencyTime.01.png" width="700" height="450" />]
+
+]
+]
+---
+### Which event type frequencies are changing the most?
+Used linear regression to evaluate the correlation between the event count of a certain event and year to determine which event types were becoming more frequent and which were becoming less frequent. 
+
+Large 'year' co-efficients show the potential impacts of climate change as weather patterns are changing over time.
+
+5 largest Co-efficients:    
+Thunderstorm Wind (295.68), Winter Weather (140.25), Drought (112.31) , Marine Thunderstorm Wind (92.23), Excessive Heat (74.35)
+
+5 Smallest Coefficients:
+Hail (-145.45), Heavy Snow (-39.68), Lightning (-27.64), Ice Storm (-21.35), Cold Wind/ Chill (-19.89)
 
 ---
-# Severity of Storms (Sarah)
+
+.panelset[
+.panel[
+.panel-name[Damages]
+.center[<img src="DamagesTime.35.png" width="750" height="550" />]
+]
+
+.panel[
+.panel-name[Fatalities]
+
+.center[<img src="FatalitiesTime.png" width="750" height="550" />]
+
+]
+]
+
+---
+.panelset[
+.panel[
+.panel-name[Frequency] 
+## Frequency of weather events across the US
+.pull-left[<img src="frequncy.png" width="520" height="350" />]
+.pull-right[<img src="Severe_frequncy.png" width="520" height="350" />]
+]
+.panel[
+.panel-name[Fatalities]
+##Number of fatalities across the US
+.center[<img src="fatalities_frequency.png" width="800" height="460" />]
+]
+.panel[
+.panel-name[Total Damage]
+##Total damage caused by severe events
+.center[<img src="severe_damage.png" width="800" height="460" />]
+]
+]
+
 ---
 # Expanding on Damages
-```{r echo=FALSE, out.width="90%", fig.align='center'}
+```{r echo=FALSE, out.width="85%", fig.align='center'}
 knitr::include_graphics("Damage by Event Type.jpg")
 ```
 ---
@@ -78,7 +173,7 @@ knitr::include_graphics("Damage by Event Type.jpg")
 ### Using K-means Clustering
 .panelset[
 .panel[.panel-name[Visualisation]
-```{r echo=FALSE, out.width="58%", fig.align='center'}
+```{r echo=FALSE, out.width="57%", fig.align='center'}
 knitr::include_graphics("Clustering.jpg")
 ```
 ]
@@ -223,12 +318,12 @@ knitr::include_graphics('events_enso.png')
 ---
 # What types of weather affect different age groups the most?
 
--Lets look at the distribution of ages in the fatalities in the United States.
+-Let's look at the distribution of ages in the fatalities in the United States.
 --
 
 
 
-.center[<img src="individual/personal_andrew/age-hist.png" width="560" height="400" />]
+.center[<img src="personal_andrew/age-hist.png" width="560" height="400" />]
 ---
 
 .panelset[
@@ -256,7 +351,7 @@ ggplot(na.omit(combine_fatality), aes(x=age_group, fill=weather_cat)) +
 .panel[
 .panel-name[Plot]
 
-.center[<img src="individual/personal_andrew/prop-bar.png" width="840" height="600" />]
+.center[<img src="personal_andrew/prop-bar.png" width="840" height="600" />]
 
 ]
 ]
@@ -266,7 +361,7 @@ ggplot(na.omit(combine_fatality), aes(x=age_group, fill=weather_cat)) +
 
 .panelset[
 .panel[
-.panel-name[Younest Code]
+.panel-name[Youngest Code]
 
 ```{r Bar of youngest, eval=FALSE}
 
@@ -298,7 +393,7 @@ young_category
 .panel[
 .panel-name[Youngest Plot]
 
-.center[<img src="individual/personal_andrew/young-bar.png" width="630" height="450" />]
+.center[<img src="personal_andrew/young-bar.png" width="630" height="450" />]
 
 ]
 
@@ -335,7 +430,7 @@ elderly_category
 .panel[
 .panel-name[Elderly Plot]
 
-.center[<img src="individual/personal_andrew/elderly-bar.png" width="630" height="450" />]
+.center[<img src="personal_andrew/elderly-bar.png" width="630" height="450" />]
 
 ]
 ]
@@ -374,7 +469,7 @@ combine_facet
 .panel[
 .panel-name[Plot]
 
-.center[<img src="individual/personal_andrew/prop-bar-time.png" width="630" height="450" />]
+.center[<img src="personal_andrew/prop-bar-time.png" width="630" height="450" />]
 
 ]
 
@@ -410,16 +505,14 @@ combine_lines
 ]
 
 .panel[
-.panel-name[plot]
+.panel-name[Plot]
 
-.center[<img src="individual/personal_andrew/fire-heat-lines.png" width="630" height="450" />]
+.center[<img src="personal_andrew/fire-heat-lines.png" width="630" height="450" />]
 
 ]
 
 ]
 
 ---
-# Summary
-
----
+class: center, middle
 # Questions?
