@@ -1,0 +1,73 @@
+---
+title: "AAAAA"
+subtitle: "Presentation subtitle (if any)"
+author: "Just Commit <br> Olivia Harris, Adam Laycock, Helen Miller, <br> Andrew Morris, Max Pohlman, Sarah Stewart"
+institute: "University of Edinburgh"
+date: "`r Sys.Date()`"
+output:
+  xaringan::moon_reader:
+    css: xaringan-themer.css
+    lib_dir: libs
+    nature:
+      ratio: "16:9"
+      highlightStyle: github
+      highlightLines: true
+      countIncrementalSlides: false
+      
+---
+```{r load-packages, include = FALSE}
+library(knitr)
+```
+
+```{r setup, include=FALSE}
+# For better figure resolution
+knitr::opts_chunk$set(fig.retina = 3, dpi = 300, fig.width = 6, fig.asp = 0.618, out.width = "80%")
+```
+
+# Dataset Background
+
+## The Dataset
+- Covers 1.6 million weather events in the United States and U.S. territories from 1996-2023.
+- Collected by the National Oceanic & Atmospheric Administration (NOAA).
+- Contains data on 50 variables regarding event details, and 8 variables regarding event fatalities
+
+
+## What is a 'Storm Event'?
+- According to the NOAA, storm events are 'weather phenomena having sufficient intensity to cause loss of life, injuries, significant property damage, and/or disruption to commerce.'
+- Multiple storm events are grouped into storm episodes.
+
+---
+class: center, middle
+
+# How have storm events changed over time, and what are the personal and monetary effects of these changes?
+
+---
+# Dataset Overview (Liv)
+
+---
+# Severity of Storms (Sarah)
+
+---
+# Geospatial Correlations (Adam)
+
+---
+# (Max)
+
+---
+# (Helen)
+
+---
+# What types of weather affect different age groups the most?
+
+-Lets look at the distribution of ages in the fatalities in the United States.
+--
+
+
+
+.center[<img src="age-hist.png" width="560" height="400" />]
+
+---
+# Summary
+
+---
+# Questions?
