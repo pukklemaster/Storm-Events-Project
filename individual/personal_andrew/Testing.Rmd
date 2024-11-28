@@ -14,15 +14,27 @@ output:
       highlightLines: true
       countIncrementalSlides: false
       
+
+
+      
 ---
 ```{r packages, echo=FALSE, message=FALSE, warning=FALSE}
 library(tidyverse)
+library(xaringanthemer)
 xaringanExtra::use_panelset()
 library(knitr)
 
 
 ```
 
+
+```{css, echo=FALSE}
+
+body{
+font-family: "Arial";
+}
+
+```
 
 ```{r setup, include=FALSE}
 # For better figure resolution
@@ -103,6 +115,86 @@ ggplot(na.omit(combine_fatality), aes(x=age_group, fill=weather_cat)) +
 ]
 
 ---
+## What is happening to the elderly and youngest?
+
+.panelset[
+.panel[
+.panel-name[Younest Code]
+
+```{r Bar of youngest, eval=FALSE}
+
+# Young - Where is it affected?
+
+young_category <- filter(young_fatality, 
+                         weather_cat == "Marine" | 
+                           weather_cat == "Atmospheric") %>%
+ggplot(aes(x=event_type, fill=weather_cat)) +
+  geom_bar() +
+  scale_fill_brewer(palette = "Dark2") +
+  labs(x ="Weather Event", 
+       y ="Amount of Fatalities", 
+       title="Young Fatalities by Most Popular Weather Categories", 
+       fill="Weather Category") +
+  theme_bw()+
+  coord_flip() 
+
+# young fatality age group plotted 
+# with the 2 largest disproportionate 
+# causes of fatalities
+
+young_category
+
+```
+
+]
+
+.panel[
+.panel-name[Youngest Plot]
+
+.center[<img src="young-bar.png" width="630" height="450" />]
+
+]
+
+
+.panel[
+.panel-name[Elderly Code]
+
+```{r Elderly plot code, eval=FALSE}
+
+# Elderly - where is it affected?
+
+# most affected by fire hi temps and tropical
+# unlike the median category
+
+elderly_category <- filter(elderly_fatality, 
+                           weather_cat == "Fire/HiTemps" | 
+                             weather_cat == "Tropical") %>%
+ggplot(aes(x=event_type, fill=weather_cat)) +
+  geom_bar() +
+  scale_fill_brewer(palette = "Dark2") +
+  labs(x ="Weather Event", 
+       y ="Amount of Fatalities", 
+       title="Elderly Fatalities by Most Popular Weather Categories", 
+       fill="Weather Category") +
+  theme_bw()+
+  coord_flip() 
+
+elderly_category
+
+```
+
+]
+
+.panel[
+.panel-name[Elderly Plot]
+
+.center[<img src="young-bar.png" width="630" height="450" />]
+
+]
+]
+
+---
+
 # Summary
 
 ---

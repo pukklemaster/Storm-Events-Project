@@ -35,6 +35,14 @@ class: center, middle, inverse, title-slide
 
 
 
+&lt;style type="text/css"&gt;
+
+body{
+font-family: "Arial";
+}
+
+&lt;/style&gt;
+
 
 
 # Dataset Background
@@ -110,6 +118,84 @@ ggplot(na.omit(combine_fatality), aes(x=age_group, fill=weather_cat)) +
 ]
 
 ---
+## What is happening to the elderly and youngest?
+
+.panelset[
+.panel[
+.panel-name[Younest Code]
+
+
+``` r
+# Young - Where is it affected?
+
+young_category &lt;- filter(young_fatality, 
+                         weather_cat == "Marine" | 
+                           weather_cat == "Atmospheric") %&gt;%
+ggplot(aes(x=event_type, fill=weather_cat)) +
+  geom_bar() +
+  scale_fill_brewer(palette = "Dark2") +
+  labs(x ="Weather Event", 
+       y ="Amount of Fatalities", 
+       title="Young Fatalities by Most Popular Weather Categories", 
+       fill="Weather Category") +
+  theme_bw()+
+  coord_flip() 
+
+# young fatality age group plotted 
+# with the 2 largest disproportionate 
+# causes of fatalities
+
+young_category
+```
+
+]
+
+.panel[
+.panel-name[Youngest Plot]
+
+.center[&lt;img src="young-bar.png" width="630" height="450" /&gt;]
+
+]
+
+
+.panel[
+.panel-name[Elderly Code]
+
+
+``` r
+# Elderly - where is it affected?
+
+# most affected by fire hi temps and tropical
+# unlike the median category
+
+elderly_category &lt;- filter(elderly_fatality, 
+                           weather_cat == "Fire/HiTemps" | 
+                             weather_cat == "Tropical") %&gt;%
+ggplot(aes(x=event_type, fill=weather_cat)) +
+  geom_bar() +
+  scale_fill_brewer(palette = "Dark2") +
+  labs(x ="Weather Event", 
+       y ="Amount of Fatalities", 
+       title="Elderly Fatalities by Most Popular Weather Categories", 
+       fill="Weather Category") +
+  theme_bw()+
+  coord_flip() 
+
+elderly_category
+```
+
+]
+
+.panel[
+.panel-name[Elderly Plot]
+
+.center[&lt;img src="young-bar.png" width="630" height="450" /&gt;]
+
+]
+]
+
+---
+
 # Summary
 
 ---
