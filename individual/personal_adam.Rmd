@@ -223,9 +223,9 @@ model_data_scaled <- model_data_scaled %>%
   ) %>% 
   mutate(
     cluster = case_when(
-      cluster == 'Cluster_1' ~ 'Low Damage / Low Casualities',
-      cluster == 'Cluster_2' ~ 'High Damage / Low Casualities',
-      TRUE ~ 'Low Damage / High Casualities'
+      cluster == 'Cluster_1' ~ 'Low Damage / Low Casualties',
+      cluster == 'Cluster_2' ~ 'High Damage / Low Casualties',
+      TRUE ~ 'Low Damage / High Casualties'
     )
   )
 
@@ -245,7 +245,7 @@ model_data_scaled %>%
     geom_jitter() +
     labs(
       x='Scaled Total Damage',
-      y='Scaled Attributed Deaths',
+      y='Scaled Attributed Casualties',
       title='K-Means Clustering of Casualties & Damages',
       colour='Cluster'
     ) +
