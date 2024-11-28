@@ -56,7 +56,37 @@ class: center, middle
 # Dataset Overview (Liv)
 
 ---
-# Severity of Storms (Sarah)
+---
+.panelset[
+.panel[
+.panel-name[Frequency] 
+## Frequency of weather events across the US
+.pull-left[<img src="frequncy.png" width="520" height="350" />]
+.pull-right[<img src="Severe_frequncy.png" width="520" height="350" />]
+]
+.panel[
+.panel-name[Fatalities]
+##Number of fatalities across the US
+.center[<img src="fatalities_frequency.png" width="800" height="460" />]
+]
+.panel[
+.panel-name[Total Damage]
+##Total damage caused by severe events
+.center[<img src="severe_damage.png" width="800" height="460" />]
+]
+]
+
+---
+# Number of severe weather events throughout the US 
+
+---
+# Number of Fatalities throughout the US
+
+
+---
+#Cost of damages per state
+
+
 ---
 # Expanding on Damages
 ```{r echo=FALSE, out.width="90%", fig.align='center'}
