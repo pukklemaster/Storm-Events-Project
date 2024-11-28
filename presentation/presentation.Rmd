@@ -23,6 +23,17 @@ library(xaringanExtra)
 ```
 
 ```{css, echo=FALSE}
+<style>
+.scrollable-panel {
+  max-height: 400px; 
+  overflow-y: auto; 
+  overflow-x: auto; 
+  padding: 10px;    
+  background-color: #f7f7f7; 
+  border: 1px solid #ddd; 
+  border-radius: 5px;
+}
+</style>
 
 body{
 font-family: "Verdana";
@@ -89,8 +100,92 @@ kable(cluster_data, caption = "Cluster Data Summary")
 ]
 
 ---
-# (Max)
+# How Have Storms Changed?
+#### Grouped by severity relative to fatality and damages averages
+.panelset[
+.panel[.panel-name[Total Averages]
+<div class="row" style="display: flex; align-items: flex-start;">
 
+<div class="column" style="flex: 1;">
+```{r, echo=FALSE, out.width="100%", fig.align="right, top"}
+knitr::include_graphics(c('Global Averages.png'))
+```
+</div> <div class="column" style="flex: 1; padding-left: 20px;">
+<li>Event types were split into less/more damaging/deadly based on if their average total fatalities or damages exceeded or was short of the average for all events during the testing period.
+<br>
+<br>
+<br>
+<li>The substantial variance in between the less/more groups for each variable indicate a non-standard distribution of data, with events tending to be either highly severe, or rarely showing an impact.
+</div> </div>
+]
+
+.panel[.panel-name[1996-7 Averages]
+<div class="row" style="display: flex; align-items: flex-start;">
+
+<div class="column" style="flex: 1;">
+```{r, echo=FALSE, out.width="100%", fig.align="right, top"}
+knitr::include_graphics(c('1996-7 Averages.png'))
+```
+</div> <div class="column" style="flex: 1; padding-left: 20px;">
+<li>The fatalities average for all events over this period was 1.174728e-01
+<li>The damages average was 1.713981e+06	
+<br>
+<br>
+<br>
+<li>It may be noted that numbers for both damages and fatalities - for both less/more groups - are greater than the total average across the data-set.
+<br>
+<br>
+<br>
+<li>This increase may be interpreted as this period having greater storm severity, or this period having a lack of storm-resilient infrastructure.
+</div> </div>
+]
+
+.panel[.panel-name[2022-3 Averages]
+<div class="row" style="display: flex; align-items: flex-start;">
+
+<div class="column" style="flex: 1;">
+```{r, echo=FALSE, out.width="100%", fig.align="right, top"}
+knitr::include_graphics(c('2022-3 Averages.png'))
+```
+</div> <div class="column" style="flex: 1; padding-left: 20px;">
+<li>The fatalities average for all events over this period was 1.162609e-01
+<li>The damages average was 7.683527e+05	
+<br>
+<br>
+<li>Comparing these results with those from the beginning of the dataset, 1996-7, we can calculate the percent changes in average fatalities (-1.031671%) and damages (-55.171452%).
+<br>
+<li>This is more drastic when looking at percent changes across groups:<br>
+Percent change (less) fatalities: -33.33333%<br>
+Percent change (more) fatalities: -48.59813%<br>
+Percent change (less) damages: -87.89507%<br>
+Percent change (more) damages: -6.966879%<br>
+<br>
+<li>Numbers went down across the board, making change in infrastructure over the years being an interesting future expansion to this project
+</div> </div>
+]
+.panel[.panel-name[Code]
+```{r fatality-graph-code, echo=TRUE, eval=FALSE, tidy=TRUE, highlight=TRUE, out.width="100%"}
+#### Adjusted Graph for Fatalities (All Data)
+fatality_graph <- details_grouped %>%
+  ggplot(aes(x = fatality_group, 
+             y = avg_fatalities_by_type, 
+             fill = fatality_group)) +
+  stat_summary(fun = "mean", geom = "bar", position = "dodge", alpha = 0.7) +
+    geom_text(stat = "summary", fun = "mean", aes(label = round(after_stat(y), 2)), 
+            vjust = -0.5, size = 3) +
+  scale_fill_manual(values = c("More Deadly" = "red", "Less Deadly" = "green")) +
+  labs(
+    title = "Average Fatalities by Group",
+    subtitle = "Based on Event Type Averages Compared to Global Average",
+    x = "Weather Group",  
+    y = "Average Fatalities per Event Type",
+    fill = NULL
+  ) +
+  # There was some more theme and formatting, but there was no space
+  )
+```
+]  
+]
 ---
 ## Storm Events and ENSO
 ### Background: What is ENSO?

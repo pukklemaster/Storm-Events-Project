@@ -35,6 +35,17 @@ class: center, middle, inverse, title-slide
 
 
 &lt;style type="text/css"&gt;
+&lt;style&gt;
+.scrollable-panel {
+  max-height: 400px; 
+  overflow-y: auto; 
+  overflow-x: auto; 
+  padding: 10px;    
+  background-color: #f7f7f7; 
+  border: 1px solid #ddd; 
+  border-radius: 5px;
+}
+&lt;/style&gt;
 
 body{
 font-family: "Verdana";
@@ -89,8 +100,87 @@ Table: Cluster Data Summary
 ]
 
 ---
-# (Max)
+# How Have Storms Changed?
+#### Grouped by severity relative to fatality and damages averages
+.panelset[
+.panel[.panel-name[Total Averages]
+&lt;div class="row" style="display: flex; align-items: flex-start;"&gt;
 
+&lt;div class="column" style="flex: 1;"&gt;
+&lt;img src="Global Averages.png" width="100%" /&gt;
+&lt;/div&gt; &lt;div class="column" style="flex: 1; padding-left: 20px;"&gt;
+&lt;li&gt;Event types were split into less/more damaging/deadly based on if their average total fatalities or damages exceeded or was short of the average for all events during the testing period.
+&lt;br&gt;
+&lt;br&gt;
+&lt;br&gt;
+&lt;li&gt;The substantial variance in between the less/more groups for each variable indicate a non-standard distribution of data, with events tending to be either highly severe, or rarely showing an impact.
+&lt;/div&gt; &lt;/div&gt;
+]
+
+.panel[.panel-name[1996-7 Averages]
+&lt;div class="row" style="display: flex; align-items: flex-start;"&gt;
+
+&lt;div class="column" style="flex: 1;"&gt;
+&lt;img src="1996-7 Averages.png" width="100%" /&gt;
+&lt;/div&gt; &lt;div class="column" style="flex: 1; padding-left: 20px;"&gt;
+&lt;li&gt;The fatalities average for all events over this period was 1.174728e-01
+&lt;li&gt;The damages average was 1.713981e+06	
+&lt;br&gt;
+&lt;br&gt;
+&lt;br&gt;
+&lt;li&gt;It may be noted that numbers for both damages and fatalities - for both less/more groups - are greater than the total average across the data-set.
+&lt;br&gt;
+&lt;br&gt;
+&lt;br&gt;
+&lt;li&gt;This increase may be interpreted as this period having greater storm severity, or this period having a lack of storm-resilient infrastructure.
+&lt;/div&gt; &lt;/div&gt;
+]
+
+.panel[.panel-name[2022-3 Averages]
+&lt;div class="row" style="display: flex; align-items: flex-start;"&gt;
+
+&lt;div class="column" style="flex: 1;"&gt;
+&lt;img src="2022-3 Averages.png" width="100%" /&gt;
+&lt;/div&gt; &lt;div class="column" style="flex: 1; padding-left: 20px;"&gt;
+&lt;li&gt;The fatalities average for all events over this period was 1.162609e-01
+&lt;li&gt;The damages average was 7.683527e+05	
+&lt;br&gt;
+&lt;br&gt;
+&lt;li&gt;Comparing these results with those from the beginning of the dataset, 1996-7, we can calculate the percent changes in average fatalities (-1.031671%) and damages (-55.171452%).
+&lt;br&gt;
+&lt;li&gt;This is more drastic when looking at percent changes across groups:&lt;br&gt;
+Percent change (less) fatalities: -33.33333%&lt;br&gt;
+Percent change (more) fatalities: -48.59813%&lt;br&gt;
+Percent change (less) damages: -87.89507%&lt;br&gt;
+Percent change (more) damages: -6.966879%&lt;br&gt;
+&lt;br&gt;
+&lt;li&gt;Numbers went down across the board, making change in infrastructure over the years being an interesting future expansion to this project
+&lt;/div&gt; &lt;/div&gt;
+]
+.panel[.panel-name[Code]
+
+``` r
+#### Adjusted Graph for Fatalities (All Data)
+fatality_graph &lt;- details_grouped %&gt;%
+  ggplot(aes(x = fatality_group, 
+             y = avg_fatalities_by_type, 
+             fill = fatality_group)) +
+  stat_summary(fun = "mean", geom = "bar", position = "dodge", alpha = 0.7) +
+    geom_text(stat = "summary", fun = "mean", aes(label = round(after_stat(y), 2)), 
+            vjust = -0.5, size = 3) +
+  scale_fill_manual(values = c("More Deadly" = "red", "Less Deadly" = "green")) +
+  labs(
+    title = "Average Fatalities by Group",
+    subtitle = "Based on Event Type Averages Compared to Global Average",
+    x = "Weather Group",  
+    y = "Average Fatalities per Event Type",
+    fill = NULL
+  ) +
+  # There was some more theme and formatting, but there was no space
+  )
+```
+]  
+]
 ---
 ## Storm Events and ENSO
 ### Background: What is ENSO?
