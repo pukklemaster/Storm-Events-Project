@@ -1,9 +1,9 @@
 ---
-title: "AAAAA"
-subtitle: "Presentation subtitle (if any)"
-author: "Just Commit <br> Olivia Harris, Adam Laycock, Helen Miller, <br> Andrew Morris, Max Pohlman, Sarah Stewart"
-institute: "University of Edinburgh"
-date: "`r Sys.Date()`"
+title: "Weather in the United States"
+subtitle: "<span style='font-size:40px;'>Data analysis that will blow you away</span>"
+author: "<span style='font-size:30px;'>Just Commit <br> Olivia Harris, Adam Laycock, Helen Miller, <br> Andrew Morris, Max Pohlman, Sarah Stewart</span>"
+institute: "<span style='font-size:30px;'>University of Edinburgh</span>"
+date: "<span style='font-size:30px;'>`r Sys.Date()`</span>"
 output:
   xaringan::moon_reader:
     css: xaringan-themer.css
@@ -22,18 +22,23 @@ library(knitr)
 library(xaringanExtra)
 ```
 
-```{css, echo=FALSE}
-
-body{
-font-family: "Verdana";
-}
-
+```{r xaringan-themer, include=FALSE, warning=FALSE}
+library(xaringanthemer)
+style_mono_accent(
+  base_color = "#308068",
+  header_font_google = google_font("Varela Round"),
+  text_font_google   = google_font("Geist", "300", "300i"),
+  code_font_google   = google_font("Fira Mono")
+)
 ```
 
 ```{r setup, include=FALSE}
 # For better figure resolution
 knitr::opts_chunk$set(fig.retina = 3, dpi = 300, fig.width = 6, fig.asp = 0.618, out.width = "80%")
 ```
+
+
+
 
 # Dataset Background
 
@@ -51,8 +56,6 @@ knitr::opts_chunk$set(fig.retina = 3, dpi = 300, fig.width = 6, fig.asp = 0.618,
 class: center, middle
 
 # How have storm events changed over time, and what are the personal and monetary effects of these changes?
-
----
 
 ---
 ### Are the number of storm events changing over time? 
@@ -109,7 +112,7 @@ Hail (-145.45), Heavy Snow (-39.68), Lightning (-27.64), Ice Storm (-21.35), Col
 .panelset[
 .panel[
 .panel-name[Damages]
-.center[<img src="DamagesTime.35.png" width="700" height="500" />]
+.center[<img src="DamagesTime.35.png" width="750" height="550" />]
 ]
 
 .panel[
@@ -120,8 +123,6 @@ Hail (-145.45), Heavy Snow (-39.68), Lightning (-27.64), Ice Storm (-21.35), Col
 ]
 ]
 
-
----
 ---
 .panelset[
 .panel[
@@ -143,19 +144,8 @@ Hail (-145.45), Heavy Snow (-39.68), Lightning (-27.64), Ice Storm (-21.35), Col
 ]
 
 ---
-# Number of severe weather events throughout the US 
-
----
-# Number of Fatalities throughout the US
-
-
----
-#Cost of damages per state
-
-
----
 # Expanding on Damages
-```{r echo=FALSE, out.width="90%", fig.align='center'}
+```{r echo=FALSE, out.width="85%", fig.align='center'}
 knitr::include_graphics("Damage by Event Type.jpg")
 ```
 ---
@@ -163,7 +153,7 @@ knitr::include_graphics("Damage by Event Type.jpg")
 ### Using K-means Clustering
 .panelset[
 .panel[.panel-name[Visualisation]
-```{r echo=FALSE, out.width="58%", fig.align='center'}
+```{r echo=FALSE, out.width="57%", fig.align='center'}
 knitr::include_graphics("Clustering.jpg")
 ```
 ]
@@ -224,7 +214,7 @@ knitr::include_graphics('events_enso.png')
 ---
 # What types of weather affect different age groups the most?
 
--Lets look at the distribution of ages in the fatalities in the United States.
+-Let's look at the distribution of ages in the fatalities in the United States.
 --
 
 
@@ -267,7 +257,7 @@ ggplot(na.omit(combine_fatality), aes(x=age_group, fill=weather_cat)) +
 
 .panelset[
 .panel[
-.panel-name[Younest Code]
+.panel-name[Youngest Code]
 
 ```{r Bar of youngest, eval=FALSE}
 
@@ -411,7 +401,7 @@ combine_lines
 ]
 
 .panel[
-.panel-name[plot]
+.panel-name[Plot]
 
 .center[<img src="personal_andrew/fire-heat-lines.png" width="630" height="450" />]
 
@@ -420,7 +410,5 @@ combine_lines
 ]
 
 ---
-# Summary
-
----
+class: center, middle
 # Questions?
