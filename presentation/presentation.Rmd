@@ -115,7 +115,7 @@ Hail (-145.45), Heavy Snow (-39.68), Lightning (-27.64), Ice Storm (-21.35), Col
 .panel[
 .panel-name[Fatalities]
 
-.center[<img src="FatalitiesTime.38.png" width="750" height="550" />]
+.center[<img src="FatalitiesTime.png" width="750" height="550" />]
 
 ]
 ]
