@@ -28,7 +28,7 @@ knitr::include_graphics("Damage by Event Type.jpg")
 ### Using K-means Clustering
 .panelset[
 .panel[.panel-name[Visualisation]
-```{r echo=FALSE, out.width="60%", fig.align='center'}
+```{r echo=FALSE, out.width="59%", fig.align='center'}
 knitr::include_graphics("Clustering.jpg")
 ```
 ]
