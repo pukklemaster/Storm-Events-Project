@@ -133,7 +133,7 @@ knitr::include_graphics('events_enso.png')
 
 
 
-.center[<img src="individual/personal_andrew/age-hist.png" width="560" height="400" />]
+.center[<img src="personal_andrew/age-hist.png" width="560" height="400" />]
 ---
 
 .panelset[
@@ -161,7 +161,7 @@ ggplot(na.omit(combine_fatality), aes(x=age_group, fill=weather_cat)) +
 .panel[
 .panel-name[Plot]
 
-.center[<img src="individual/personal_andrew/prop-bar.png" width="840" height="600" />]
+.center[<img src="personal_andrew/prop-bar.png" width="840" height="600" />]
 
 ]
 ]
@@ -203,7 +203,7 @@ young_category
 .panel[
 .panel-name[Youngest Plot]
 
-.center[<img src="individual/personal_andrew/young-bar.png" width="630" height="450" />]
+.center[<img src="personal_andrew/young-bar.png" width="630" height="450" />]
 
 ]
 
@@ -240,7 +240,7 @@ elderly_category
 .panel[
 .panel-name[Elderly Plot]
 
-.center[<img src="individual/personal_andrew/elderly-bar.png" width="630" height="450" />]
+.center[<img src="personal_andrew/elderly-bar.png" width="630" height="450" />]
 
 ]
 ]
@@ -279,7 +279,7 @@ combine_facet
 .panel[
 .panel-name[Plot]
 
-.center[<img src="individual/personal_andrew/prop-bar-time.png" width="630" height="450" />]
+.center[<img src="personal_andrew/prop-bar-time.png" width="630" height="450" />]
 
 ]
 
@@ -317,7 +317,7 @@ combine_lines
 .panel[
 .panel-name[plot]
 
-.center[<img src="individual/personal_andrew/fire-heat-lines.png" width="630" height="450" />]
+.center[<img src="personal_andrew/fire-heat-lines.png" width="630" height="450" />]
 
 ]
 
