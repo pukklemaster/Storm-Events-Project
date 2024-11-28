@@ -188,10 +188,89 @@ elderly_category
 .panel[
 .panel-name[Elderly Plot]
 
-.center[<img src="young-bar.png" width="630" height="450" />]
+.center[<img src="elderly-bar.png" width="630" height="450" />]
 
 ]
 ]
+---
+## How has this changed over time?
+
+.panelset[
+.panel[
+.panel-name[Proportion over time]
+
+```{r Proportion over time bar plot, eval=FALSE}
+
+# How has weather fatalities changed over time?
+
+combine_facet <- ggplot(na.omit(combine_fatality), aes(x=age_group, fill=weather_cat)) +
+  geom_bar(position = "fill") +
+  scale_fill_brewer(palette = "Dark2") +
+  labs(x= "Age group", y= "Proportion of fatalities for each category over time", 
+       fill= "Weather Categories", 
+       title = "Proportion of Each Age Group Affected by Each Weather Category") +
+  scale_x_discrete(labels = c("elderly" = "E", "median" = "M", "young" = "Y"
+  )) +
+  theme_bw() +
+  theme(axis.text.y = element_blank()) +
+  facet_wrap(year(ymd)~.) 
+
+# proportionality of weather categories 
+# and fatality over years
+
+combine_facet
+
+```
+
+]
+
+.panel[
+.panel-name[Plot]
+
+.center[<img src="prop-bar-time.png" width="630" height="450" />]
+
+]
+
+.panel[
+
+.panel-name[Fire and High Temperatures]
+
+```{r Fire and Hitemps, eval=FALSE}
+
+# are Fire/HiTemps increasing?
+
+combine_lines <- filter(combine_fatality, 
+                        weather_cat == "Fire/HiTemps") %>%
+  ggplot(aes(x=year(ymd), 
+             colour=event_type)) +
+  geom_line(aes(fill=..count..),
+            stat="bin", binwidth = 1, linewidth = 1) +
+  labs(x="Years",
+       y="Amount of Fatalities",
+       title="Amount of Fire and High Temperature Fatalities Over Time",
+       colour="Event Types") +
+  scale_colour_manual(values=c(
+    "midnightblue", "purple2", "mediumorchid2"
+    )) +
+  theme_bw()
+
+# plot looks at the changes of Fire/HiTemps weather_cat over years
+
+combine_lines
+
+```
+
+]
+
+.panel[
+.panel-name[plot]
+
+.center[<img src="fire-heat-lines.png" width="630" height="450" />]
+
+]
+
+]
+
 
 ---
 
