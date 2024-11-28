@@ -92,8 +92,39 @@ kable(cluster_data, caption = "Cluster Data Summary")
 # (Max)
 
 ---
-# (Helen)
+## Storm Events and ENSO
+### Background: What is ENSO?
+- Natural interannual climate event
+- Image adapted from: https://iri.columbia.edu/our-expertise/climate/enso/enso-essentials/
 
+```{r, echo=FALSE, out.width="25%", fig.align="right, top"}
+knitr::include_graphics(c('el_nino.png', 'neutral.png', 'la_nina.png'))
+```
+### In the Eastern Pacific...
+
+<div style="display: flex; justify-content: space-between; align-items: flex-end; height: 100px;">
+  <div style="width: 45%; text-align: left;">
+    <strong>El Niño:</strong>
+    <ul>
+      <li>Increased rainfall</li>
+      <li>Warmer than normal</li>
+      <li>Decreased oceanic productivity</li>
+    </ul>
+  </div>
+  <div style="width: 45%; text-align: left;">
+    <strong>La Niña:</strong>
+    <ul>
+      <li>Decreased rainfall</li>
+      <li>Cooler than normal</li>
+      <li>Increased oceanic productivity</li>
+    </ul>
+  </div>
+</div>
+---
+### Can we see the impact of ENSO in our data?
+```{r, echo = FALSE, out.width="auto", out.height = "520", fig.align="top"}
+knitr::include_graphics('events_enso.png')
+```
 ---
 # What types of weather affect different age groups the most?
 
