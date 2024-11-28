@@ -17,10 +17,7 @@ output:
 ---
 ```{r packages, echo=FALSE, message=FALSE, warning=FALSE}
 library(tidyverse)
-library(fontawesome)
-
 xaringanExtra::use_panelset()
-
 library(knitr)
 
 
