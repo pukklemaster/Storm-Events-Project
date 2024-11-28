@@ -69,10 +69,16 @@ damage_plot <- cost_data %>%
   theme_minimal() +
   theme(plot.caption = element_text(hjust = -0.75, face= "italic"))
 
-#ggsave('plots/Damage by Event Type.jpg', plot=damage_plot)
+ggsave('../plots/Damage by Event Type.jpg', 
+       plot = damage_plot, 
+       width = 16, 
+       height = 9, 
+       units = "in",   # units can be "in" (inches), "cm", or "mm"
+       dpi = 300       # high resolution for presentations
+)
 ```
 
-# Simple Statistics Function 
+# Simple Statistics Function
 
 ```{r Simple Statistics Function}
 eval_percentage_criteria <- function(col, type) {
@@ -207,7 +213,23 @@ kmeans_fit <- kmeans_spec %>%
   fit(~ damage_total + attributed_casualties, data = model_data_scaled)
 
 model_data_scaled <- kmeans_fit %>% 
-  augment(model_data_scaled)
+  augment(
+    model_data_scaled
+  )
+
+model_data_scaled <- model_data_scaled %>% 
+  rename(
+    cluster = .pred_cluster
+  ) %>% 
+  mutate(
+    cluster = case_when(
+      cluster == 'Cluster_1' ~ 'Low Damage / Low Casualities',
+      cluster == 'Cluster_2' ~ 'High Damage / Low Casualities',
+      TRUE ~ 'Low Damage / High Casualities'
+    )
+  )
+
+
 ```
 
 ```{r Scatter Plot of Scaled Data by Cluster}
@@ -217,7 +239,7 @@ model_data_scaled %>%
       mapping=aes(
         x=damage_total,
         y=attributed_casualties,
-        colour=.pred_cluster
+        colour=cluster
       )
     ) +
     geom_jitter() +
@@ -233,7 +255,7 @@ model_data_scaled %>%
 ```{r Cluster Frequency Table}
 model_data_scaled %>% 
   group_by(
-    .pred_cluster
+    cluster
   ) %>% 
     summarise(
       total = n()
@@ -571,4 +593,3 @@ storm_pred %>%
         percentage = n()/250000*100
       )
 ```
-
