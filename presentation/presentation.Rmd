@@ -53,7 +53,73 @@ class: center, middle
 # How have storm events changed over time, and what are the personal and monetary effects of these changes?
 
 ---
-# Dataset Overview (Liv)
+
+---
+### Are the number of storm events changing over time? 
+
+.panelset[
+.panel[
+.panel-name[Code]
+
+```{r Proportion to age cat2, eval= FALSE}
+
+# Making variable year
+
+details$year <- as.numeric(format(details$begin_dt, "%Y"))
+events_per_year <- aggregate(event_id ~ year, data = details, FUN = length)
+names(events_per_year) <- c("year", "event_count") 
+model3 <- lm(event_count ~ year, data = events_per_year)
+
+summary(model3)
+
+# Visualising
+
+ggplot(events_per_year, aes(x = year, y = event_count)) +
+  geom_point() +  
+  geom_smooth(method = "lm", se = TRUE, color = "purple2", linetype = "solid", size = 1) + 
+  labs(title = "Event Count Over Time",
+       x = "Year",
+       y = "Number of Events") +
+  theme_minimal()
+
+```
+]
+
+.panel[
+.panel-name[Plot]
+
+.center[<img src="Frequency.22.png" width="700" height="450" />]
+
+]
+]
+---
+### Which event type frequencies are changing the most?
+Used linear regression to evaluate the correlation between the event count of a certain event and year to determine which event types were becoming more frequent and which were becoming less frequent. 
+
+Large 'year' co-efficients show the potential impacts of climate change as weather patterns are changing over time.
+
+5 largest Co-efficients:    
+Thunderstorm Wind (295.68), Winter Weather (140.25), Drought (112.31) , Marine Thunderstorm Wind (92.23), Excessive Heat (74.35)
+
+5 Smallest Coefficients:
+Hail (-145.45), Heavy Snow (-39.68), Lightning (-27.64), Ice Storm (-21.35), Cold Wind/ Chill (-19.89)
+
+---
+
+.panelset[
+.panel[
+.panel-name[Damages]
+.center[<img src="DamagesTime.35.png" width="700" height="500" />]
+]
+
+.panel[
+.panel-name[Fatalities]
+
+.center[<img src="FatalitiesTime.38.png" width="750" height="550" />]
+
+]
+]
+
 
 ---
 ---
