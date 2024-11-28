@@ -15,9 +15,17 @@ output:
       countIncrementalSlides: false
       
 ---
-```{r load-packages, include = FALSE}
+```{r packages, echo=FALSE, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(fontawesome)
+
+xaringanExtra::use_panelset()
+
 library(knitr)
+
+
 ```
+
 
 ```{r setup, include=FALSE}
 # For better figure resolution
@@ -65,6 +73,37 @@ class: center, middle
 
 
 .center[<img src="age-hist.png" width="560" height="400" />]
+---
+
+.panelset[
+.panel[
+.panel-name[Code]
+
+```{r Proportion to age cat, eval= FALSE}
+
+# plot of age groups and fatality type
+
+ggplot(na.omit(combine_fatality), aes(x=age_group, fill=weather_cat)) +
+  geom_bar(position = "fill") +
+  scale_fill_brewer(palette = "Dark2") +
+  labs(x= "Age group",
+       y= "Proportion of fatalities for each category",
+       fill= "Weather Categories",
+       title = "Proportion of Each Age Group Affected by Each Weather Category") +
+  theme_bw() 
+# Proportion of each age group affected by
+# different weather categories
+
+```
+]
+
+.panel[
+.panel-name[Plot]
+
+.center[<img src="prop-bar.png" width="840" height="600" />]
+
+]
+]
 
 ---
 # Summary
