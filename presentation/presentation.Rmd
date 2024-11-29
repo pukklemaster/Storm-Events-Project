@@ -95,30 +95,19 @@ ggplot(events_per_year, aes(x = year, y = event_count)) +
 
 ]
 ]
----
-### Which event type frequencies are changing the most?
-Used linear regression to evaluate the correlation between the event count of a certain event and year to determine which event types were becoming more frequent and which were becoming less frequent. 
-
-Large 'year' co-efficients show the potential impacts of climate change as weather patterns are changing over time.
-
-5 largest Co-efficients:    
-Thunderstorm Wind (295.68), Winter Weather (140.25), Drought (112.31) , Marine Thunderstorm Wind (92.23), Excessive Heat (74.35)
-
-5 Smallest Coefficients:
-Hail (-145.45), Heavy Snow (-39.68), Lightning (-27.64), Ice Storm (-21.35), Cold Wind/ Chill (-19.89)
 
 ---
 
 .panelset[
 .panel[
 .panel-name[Damages]
-.center[<img src="DamagesTime.35.png" width="750" height="550" />]
+.center[<img src="LMD.png" width="750" height="550" />]
 ]
 
 .panel[
 .panel-name[Fatalities]
 
-.center[<img src="FatalitiesTime.png" width="750" height="550" />]
+.center[<img src="LMF.41.png" width="750" height="550" />]
 
 ]
 ]
