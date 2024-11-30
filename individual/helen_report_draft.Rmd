@@ -1,0 +1,143 @@
+---
+title: "Helen Report Draft"
+author: "helenrmiller"
+date: "`r Sys.Date()`"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+```{r load-lib, message = FALSE}
+library(tidyverse)
+library(tidymodels)
+library(janitor)
+```
+
+```{r load-data}
+details = read_rds('../data/clean_data/details_clean.rds')
+fatalities = read_rds('../data/clean_data/fatalities_clean.rds')
+```
+
+## Event Proportions and ENSO Status
+
+To simplify the investigation of the impact of El Niño Southern Oscillation (ENSO) on our data, irrelevant variables were removed from the `details_clean` data set (Chunk 1). Then, using data from NOAA and NASA, a column displaying the ENSO status of each year was added and the resulting data frame was saved as `details_enso` (Chunk 2). Finally, a table of expected and observed events grouped by ENSO status was produced for initial analysis (Chunk 3). `exp_prop` acts as a null hypothesis-- assuming ENSO status has no impact on event frequency.The resulting table shows that the observed frequency is relatively similar to expected, meaning we fail to reject the null hypothesis.
+
+```{r chunk_1}
+#remove irrelevant variables for ENSO analysis
+details_smaller <- details %>% 
+  select(-region_fips,
+         -cz_type, 
+         -cz_fips, 
+         -cz_timezone, 
+         -wfo, 
+         -source, 
+         -tor_other_cz_state, 
+         -tor_other_cz_fips, 
+        )
+```
+
+```{r chunk_2}
+#add a column for ENSO status
+details_enso <- details_smaller %>% 
+  mutate(enso_status = case_when(
+         year(begin_dt) %in% c(1998, 
+                               2003, 
+                               2007, 
+                               2010, 
+                               2016, # 1998-2022 -> (NOAA, 2022)
+                               2023 #2023 > (NASA, 2024)
+                               ) ~ 'el_nino',
+         year(begin_dt) %in% c(1999, 
+                               2000, 
+                               2008, 
+                               2011, 
+                               2012, 
+                               2021, 
+                               2022
+                               ) ~ 'la_nina',
+         TRUE ~ 'neutral'
+  ))
+```
+
+```{r chunk_3 / table_1}
+#create frequency table of ENSO events
+details_enso %>% 
+  group_by(enso_status) %>% 
+  summarise(obs_count = n(), #observed event count
+            obs_prop = n() / nrow(details_enso), #observed event proportion
+            exp_prop = length(unique(year(begin_dt))) #expected event proportion
+            / length(unique(year(details_enso$begin_dt)))
+  )
+```
+
+## Event Types and ENSO Status
+Though event frequency does not appear significantly impacted by ENSO, we were also interested in if the proportion of event types varies by ENSO status. This was explored by calculating event type proportions across all years of a common ENSO status (Chunk 4). Event types with the largest difference in proportion between El Niño and La Niña years were visualised (Chunk 5).
+
+```{r chunk_4}
+#calculate proportion in El Niño years
+el_nino_prop <- details_enso %>% 
+  filter(enso_status == 'el_nino') %>%
+  count(event_type) %>% 
+  mutate(proportion_en = n / sum(n))
+
+#calculate proportion in La Niña years
+la_nina_prop <- details_enso %>% 
+  filter(enso_status == 'la_nina') %>%
+  count(event_type) %>% 
+  mutate(proportion_ln = n / sum(n))
+
+#calculate proportion in neutral years
+neutral_prop <- details_enso %>% 
+  filter(enso_status == 'neutral') %>%
+  count(event_type) %>% 
+  mutate(proportion_n = n / sum(n))
+
+#join proportion tibbles
+proportions_enso <- full_join(el_nino_prop, neutral_prop, by = 'event_type') %>% 
+  full_join(la_nina_prop, by = 'event_type') %>% 
+  top_n((abs(proportion_en - proportion_ln)), n = 10) %>% 
+  pivot_longer(cols = c(proportion_en, proportion_ln, proportion_n), 
+               names_to = 'enso_status', 
+               values_to = 'proportion'
+               )
+```
+
+```{r chunk_5}
+#reorder ENSO status for plotting
+proportions_enso <- proportions_enso %>%
+  mutate(enso_status = factor(enso_status, levels = c("proportion_en", "proportion_n", "proportion_ln")))
+
+#create visualisation
+proportions_enso %>% 
+  ggplot(aes(fill = enso_status, 
+             x = proportion, 
+             y = reorder(event_type, proportion)) #make plot more intuitive
+         ) +
+  
+  geom_col(position = 'dodge') + #separate columns -> easier to compare
+  
+  labs(
+    x = "Proportion of Total Events in Common ENSO Status Years",
+    y = "Event Type",
+    title = "Event Proportion by Event Type and ENSO Status",
+    subtitle = "Event types with largest difference between El Niño and La Niña years",
+    fill = 'ENSO Status'
+  ) +
+  
+  scale_fill_manual(values = c('proportion_en' = 'midnightblue', 
+                               'proportion_n' = 'purple2', 
+                               'proportion_ln' = 'mediumorchid2'),
+    labels = c('El Niño', 'Neutral', 'La Niña')
+  )
+```
+
+
+
+
+# Citations 
+
+Ocean Surface Topography from Space. (2024). *El Niño 2023 \| El Niño/La Niña Watch & PDO*. [online] Available at: <https://sealevel.jpl.nasa.gov/data/el-nino-la-nina-watch-and-pdo/el-nino-2023/.>
+
+FORMAT THIS: <https://psl.noaa.gov/enso/past_events.html>
