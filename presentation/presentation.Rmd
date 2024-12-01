@@ -21,26 +21,6 @@ xaringanExtra::use_panelset()
 library(knitr)
 library(xaringanExtra)
 ```
-
-<<<<<<< HEAD
-```{css, echo=FALSE}
-<style>
-.scrollable-panel {
-  max-height: 400px; 
-  overflow-y: auto; 
-  overflow-x: auto; 
-  padding: 10px;    
-  background-color: #f7f7f7; 
-  border: 1px solid #ddd; 
-  border-radius: 5px;
-}
-</style>
-
-body{
-font-family: "Verdana";
-}
-
-=======
 ```{r xaringan-themer, include=FALSE, warning=FALSE}
 library(xaringanthemer)
 style_mono_accent(
@@ -49,7 +29,6 @@ style_mono_accent(
   text_font_google   = google_font("Geist", "300", "300i"),
   code_font_google   = google_font("Fira Mono")
 )
->>>>>>> c63eb8104aa194bbc011503c64c614a0c9b83f10
 ```
 
 ```{r setup, include=FALSE}
