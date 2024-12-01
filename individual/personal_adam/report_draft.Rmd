@@ -159,16 +159,20 @@ elbow_data %>%
 
 ## Fitting the Optimised Model
 ```{r Optimised Model}
+# Create a model object using the optimum number of clusters
 kmeans_spec <- k_means(num_clusters = 3)
 
+# Fit the model
 kmeans_fit <- kmeans_spec %>%
   fit(~ damage_total + attributed_casualties, data = model_data_scaled)
 
+# Add clusters to data
 model_data_scaled <- kmeans_fit %>% 
   augment(
     model_data_scaled
   )
 
+# Change cluster names
 model_data_scaled <- model_data_scaled %>% 
   rename(
     cluster = .pred_cluster
@@ -185,6 +189,7 @@ model_data_scaled <- model_data_scaled %>%
 ## Visualising Clustering Results
 ### Scatterplot using Clusters
 ```{r Scatter Plot of Scaled Data by Cluster, fig.align='center'}
+# Create a scatterplot of the features, hued by cluster
 model_data_scaled %>%
   ungroup() %>% 
     ggplot(
@@ -206,6 +211,7 @@ model_data_scaled %>%
 
 ### Tabular Clusters
 ```{r Cluster Frequency Table, fig.align='center'}
+# Create a table for the number of events in each cluster
 model_table <- model_data_scaled %>% 
   group_by(
     cluster
@@ -229,23 +235,27 @@ Across the assessed time period, the vast majority of storm events fell into the
 # Geospatial Correlation Between Events & Time
 ## Building the Function
 ```{r Map Correlations Between Number of Events & Time}
+# Define function
 map_correlations <- function(event_type) {
+  # Defuse argument for dplyr
   event_type_expr <- enquo(event_type)
   
-total_region_data <- details %>%
-  select(
-    begin_dt, event_type, region
-  ) %>% 
-    group_by(
-      region, year(begin_dt)
-    ) %>%
-      summarise(
-        ov_total = n()
-      ) %>% 
-        rename(
-          year = `year(begin_dt)`
-        )
+  # Group by region and year
+  total_region_data <- details %>%
+    select(
+      begin_dt, event_type, region
+    ) %>% 
+      group_by(
+        region, year(begin_dt)
+      ) %>%
+        summarise(
+          ov_total = n()
+        ) %>% 
+          rename(
+            year = `year(begin_dt)`
+          )
 
+  # Evaluate and filter by event type, join to total events
   region_data <- details %>%
     filter(
       event_type == !!event_type_expr
@@ -272,11 +282,13 @@ total_region_data <- details %>%
                     prop = total / ov_total
                   )
 
+  # Run pearson's rank between time & event proportion
   correlation_data <- region_data %>%
     group_by(
       region
     ) %>%
       summarise(
+        # Continue through common, non-fatal errors
         corr_test = list(tryCatch(
           cor.test(
             year, 
@@ -287,10 +299,12 @@ total_region_data <- details %>%
           error = function(e) NULL
         ))
       ) %>%
+        # Add correlation and p-values into variables
         mutate(
           corr = sapply(corr_test, function(test) if (!is.null(test)) test$estimate else NA),
           p_value = sapply(corr_test, function(test) if (!is.null(test)) test$p.value else NA)
         ) %>%
+          # Remove NA values and statistically insignificant results
           filter(
             !is.na(corr) & !is.na(p_value) & p_value <= 0.05
           ) %>%
@@ -301,8 +315,10 @@ total_region_data <- details %>%
                 event_type = event_type
               )
   
+  # Build a map of the US
   map_data <- usmap::us_map(regions = "states")
   
+  # Mutate map_data to have parity with correlation data
   map_data <- map_data %>% 
     mutate(
       full = tolower(full)
@@ -311,13 +327,16 @@ total_region_data <- details %>%
         region = full
       )
   
+  # Alter correlation region data
   correlation_data <- correlation_data %>% 
     mutate(
       region = tolower(region)
     )
   
+  # Join correlation and map data
   data <- left_join(map_data, correlation_data, by='region')
   
+  # Build the map showing correlations
   plot_usmap(
     data=data, 
     values='corr'
@@ -365,6 +384,7 @@ These plots highlight a key limitation with this script, rarer events are much h
 ## Preprocessing
 ### Response & Sampling
 ```{r}
+# Create new deady variable based on deaths
 details <- details %>% 
   mutate(
     deadly = case_when(
@@ -373,11 +393,13 @@ details <- details %>%
     )
   )
 
+# Select only relevant variables
 model_data <- details %>% 
   select(
     begin_dt, region, event_type, deadly
   )
 
+# Take a large sample of the data
 model_data <- model_data %>% 
   sample_n(
     1000000
@@ -386,6 +408,7 @@ model_data <- model_data %>%
 
 ### Train, Test Split
 ```{r}
+# Set seed and split data
 set.seed(1)
 storm_split <- initial_split(model_data)
 storm_train <- training(storm_split)
@@ -394,16 +417,19 @@ storm_test  <- testing(storm_split)
 
 ### Building the Recipe, Model, & Workflow
 ```{r}
+# Build preprocessing recipe
 storm_rec_1 <- recipe(
   deadly ~ .,
   data = storm_train
 ) %>% 
   step_dummy(all_nominal(), -all_outcomes())
 
+# Declare model
 storm_mod_1 <- logistic_reg() %>%
   set_engine("glm") %>% 
   set_mode("classification")
   
+# Build workflow using recipe and model
 storm_wflow_1 <- workflow() %>%
   add_recipe(storm_rec_1) %>%
   add_model(storm_mod_1)
@@ -412,13 +438,16 @@ storm_wflow_1 <- workflow() %>%
 ## Training the Model
 ### Fitting the Model Using Parallel Processing
 ```{r message=FALSE, warning=FALSE}
+# Use parallel processing to speed up fit
 registerDoParallel(cores = detectCores() - 1)
 
+# Fit and store the model
 storm_fit_1 <- fit(storm_wflow_1, data = storm_train)
 ```
 
 ### Extracting Prediction Probabilities
 ```{r message=FALSE, warning=FALSE}
+# Create prediction probabilities and bind to test data
 storm_pred <- predict(
   storm_fit_1, 
   storm_test, 
@@ -432,11 +461,13 @@ storm_pred <- predict(
 ## Analysing Model Fit
 ### ROC Curve & AUC Value
 ```{r fig.align='center'}
+# Convert response variable to a factor
 storm_pred <- storm_pred %>% 
   mutate(
     deadly = as.factor(deadly)
   )
 
+# Calculate an AUC score
 auc_score <- storm_pred %>% 
   roc_auc(
     truth = deadly,
@@ -444,6 +475,7 @@ auc_score <- storm_pred %>%
     event_level = "first"
   )
 
+# Build ROC curve and attach AUC score
 storm_pred %>%
   roc_curve(
     truth = deadly,
@@ -465,6 +497,7 @@ storm_pred %>%
 
 ### Building a Confusion Matrix
 ```{r message=FALSE, warning=FALSE, fig.align='center'}
+# Use probability cutoff to calculate model prediction
 storm_pred <- storm_pred %>% 
   mutate(
     prediction = case_when(
@@ -474,6 +507,7 @@ storm_pred <- storm_pred %>%
     prediction = as.factor(prediction)
   )
 
+# Construct and a confusion matrix object and convert it to a tibble
 conf_mat <- conf_mat(
   data = storm_pred,
   truth = deadly,
@@ -481,12 +515,14 @@ conf_mat <- conf_mat(
 ) %>%
   tidy()
 
+# Extract values from the tibble to build a new, clean tibble
 confusion <- tibble(
   truth = c('Deadly', 'Not Deadly', 'Deadly', 'Not Deadly'),
   prediction = c('Deadly', 'Not Deadly', 'Not Deadly', 'Deadly'),
   n = c(conf_mat[1,2], conf_mat[4,2], conf_mat[2,2], conf_mat[3,2])
 )
 
+# Plot a confusion matrix
 confusion %>% 
   ggplot(
     mapping = aes(
@@ -519,6 +555,7 @@ confusion %>%
 
 ### Accuracy
 ```{r}
+# Calculate an accuracy metric
 storm_pred %>% 
   mutate(
     result = case_when(
