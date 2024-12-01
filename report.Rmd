@@ -316,6 +316,201 @@ However, the R-squared values are low (0.3 for damages and 0.2 for fatalities), 
 
 
 
+```{r filter events}
+severe_details <- details %>%
+  select(-c(episode_id, wfo, source, region_fips, end_dt, region_fips, cz_type, cz_fips, cz_name, cz_timezone, injuries_direct, injuries_indirect, deaths_direct, deaths_indirect, flood_cause, category, tor_f_scale, tor_length, tor_width, tor_other_wfo, tor_other_cz_state, tor_other_cz_fips, tor_other_cz_name, begin_azimuth, end_azimuth, begin_lon, begin_lat, end_lon, end_lat, duration, magnitude_type, begin_range, begin_location, end_range)) %>%
+  group_by(event_type) %>%
+  mutate(sum_damage_total = sum(damage_total, na.rm = TRUE)) %>%
+  ungroup() %>%
+  arrange(
+    desc(sum_damage_total),
+  ) %>%
+  distinct(event_type, .keep_all = TRUE) 
+
+```
+
+```{r not severe}
+not_severe_details <- details %>%
+  select(-c(episode_id, wfo, source, region_fips, end_dt, region_fips, cz_type, cz_fips, cz_name, cz_timezone, injuries_direct, injuries_indirect, deaths_direct, deaths_indirect, flood_cause, category, tor_f_scale, tor_length, tor_width, tor_other_wfo, tor_other_cz_state, tor_other_cz_fips, tor_other_cz_name, begin_azimuth, end_azimuth, begin_lon, begin_lat, end_lon, end_lat, duration, magnitude_type, begin_range, begin_location, end_range)) %>%
+  group_by(event_type) %>%
+  mutate(sum_damage_total = sum(damage_total, na.rm = TRUE)) %>%
+  ungroup() %>%
+  arrange(
+    desc(sum_damage_total),
+  ) 
+```
+
+```{r joining}
+combined_data <- severe_details %>%
+  full_join(fatalities, by = "event_id")
+```
+ 
+```{r not combined}
+not_combined_data <- not_severe_details %>%
+  full_join(fatalities, by = "event_id")
+```
+
+When analyzing the total number of weather events, we found Texas experienced significantly more weather events than any other state. This could potentially be explained by its considerably large size. 
+
+```{r not severe frequency events}
+not_frequency_by_region <-not_combined_data%>%
+  group_by(region) %>%
+  summarize(
+    no_events = n_distinct(event_id)) %>%
+  mutate(no_events = no_events) %>%
+  ungroup()
+ 
+not_total_events <- not_combined_data %>%
+  summarize(total_events = n_distinct(event_id)) %>%
+  pull(total_events)
+  
+not_frequency_by_region <- not_frequency_by_region %>%
+  mutate(not_total_events= total_events)
+ 
+not_combined_data <- not_combined_data %>%
+  left_join(not_frequency_by_region, by="region")
+ 
+```
+ 
+```{r not severe event frequency map}
+not_combined_data <- not_combined_data %>% 
+  mutate(region = tolower(region))
+ 
+not_frequency_by_region <- not_frequency_by_region %>%
+  mutate(region = tolower(region))
+ 
+             
+usa_map <- map_data("state")
+             
+map_combined <- usa_map %>% 
+  left_join(not_frequency_by_region, by = "region") 
+ 
+ 
+map_combined %>% 
+  ggplot(
+    mapping = aes(
+      x = long, y = lat, group = group, fill = no_events)
+  ) +
+  geom_polygon() +
+  scale_fill_gradient(low = "yellow", high = "red", name = "Number of events") + 
+  labs(
+    title = "Number of all weather events experienced per state") +
+  theme_minimal()
+```
+
+With the filtered data, analyzed which states experienced severe weather events and how often. From this we found Florida, Texas and California endured the highest frequency of severe weather events. 
+
+```{r  frequency events}
+frequency_by_region <-combined_data%>%
+  group_by(region) %>%
+  summarize(
+    no_events = n_distinct(event_id)) %>%
+  mutate(no_events = no_events) %>%
+  ungroup()
+ 
+total_events <- combined_data %>%
+  summarize(total_events = n_distinct(event_id)) %>%
+  pull(total_events)
+  
+frequency_by_region <- frequency_by_region %>%
+  mutate(total_events= total_events)
+ 
+combined_data <- combined_data %>%
+  left_join(frequency_by_region, by="region")
+ 
+```
+ 
+```{r event frequency map}
+ 
+combined_data <- combined_data %>% 
+  mutate(region = tolower(region))
+ 
+frequency_by_region <- frequency_by_region %>%
+  mutate(region = tolower(region))
+ 
+             
+usa_map <- map_data("state")
+             
+map_combined <- usa_map %>% 
+  left_join(frequency_by_region, by = "region") 
+ 
+ 
+map_combined %>% 
+  ggplot(
+    mapping = aes(
+      x = long, y = lat, group = group, fill = no_events)
+  ) +
+  geom_polygon() +
+  scale_fill_gradient(low = "yellow", high = "red", name = "Number of severe events") + 
+  labs(
+    title = "Map of the USA",
+    subtitle = "Most severe weather events experienced per state") +
+  theme_minimal()
+```
+
+When comparing this data to the total number of fatalities caused by all weather events, we found that, as predicted, Florida, California, and Texas all experienced a high fatality rate. However, unexpectedly Arizona showed a high number of fatalities, even though they did not experience a lot of severe weather. 
+
+```{r not fatalities  map}
+ 
+not_combined_data <- not_combined_data %>% 
+  mutate(region = tolower(region))
+ 
+fatalities_by_region <- fatalities_by_region %>%
+  mutate(region = tolower(region))
+ 
+             
+usa_map <- map_data("state")
+             
+map_combined <- usa_map %>% 
+  left_join(fatalities_by_region, by = "region") 
+ 
+map_combined
+ 
+map_combined %>% 
+  ggplot(
+    mapping = aes(
+      x = long, y = lat, group = group, fill = no_fatalities)
+  ) +
+  geom_polygon() +
+  scale_fill_gradient(low = "yellow", high = "red", name = "Number of fatalities") + 
+  labs(
+    title = "Number of fatalities per state") +
+  theme_minimal()
+```
+
+Finally, we compared the results found to the total damages caused by severe weather events and much of what we discovered was to be expected, with Florida, Texas, California and Arizona all having experienced a high degree of total damages caused by severe weather events. However, many states experienced similar high damage costs while experiencing drastically less frequent severe weather events. From this we concluded that it could potentially stem from the lack of sufficient infrastructure in place to prepare for storm events, especially compared to states experiencing severe weather events frequently. 
+
+```{r map damage}
+ 
+#load map data
+combined_data <- combined_data %>% 
+      mutate(region = tolower(region))
+             
+usa_map <- map_data("state")     
+             
+map_combined<- combined_data%>% 
+  full_join(usa_map)
+ 
+# Plot the map
+map_combined %>% 
+  ggplot(
+    mapping = aes(
+      x = long, y = lat, group = group, fill = log(sum_damage_total)
+    )
+  ) +
+  geom_polygon() +
+  scale_fill_gradient(low = "yellow", high = "red", name = "Total Damage ($)") + 
+  labs(title = "States experiencing the most damage") +
+  theme_minimal()
+```
+
+
+
+
+
+
+
+
 
 
 # Damage Makeup by Event Type
@@ -868,194 +1063,6 @@ storm_pred %>%
 
 
 
-
-```{r filter events}
-severe_details <- details %>%
-  select(-c(episode_id, wfo, source, region_fips, end_dt, region_fips, cz_type, cz_fips, cz_name, cz_timezone, injuries_direct, injuries_indirect, deaths_direct, deaths_indirect, flood_cause, category, tor_f_scale, tor_length, tor_width, tor_other_wfo, tor_other_cz_state, tor_other_cz_fips, tor_other_cz_name, begin_azimuth, end_azimuth, begin_lon, begin_lat, end_lon, end_lat, duration, magnitude_type, begin_range, begin_location, end_range)) %>%
-  group_by(event_type) %>%
-  mutate(sum_damage_total = sum(damage_total, na.rm = TRUE)) %>%
-  ungroup() %>%
-  arrange(
-    desc(sum_damage_total),
-  ) %>%
-  distinct(event_type, .keep_all = TRUE) 
-
-```
-
-```{r not severe}
-not_severe_details <- details %>%
-  select(-c(episode_id, wfo, source, region_fips, end_dt, region_fips, cz_type, cz_fips, cz_name, cz_timezone, injuries_direct, injuries_indirect, deaths_direct, deaths_indirect, flood_cause, category, tor_f_scale, tor_length, tor_width, tor_other_wfo, tor_other_cz_state, tor_other_cz_fips, tor_other_cz_name, begin_azimuth, end_azimuth, begin_lon, begin_lat, end_lon, end_lat, duration, magnitude_type, begin_range, begin_location, end_range)) %>%
-  group_by(event_type) %>%
-  mutate(sum_damage_total = sum(damage_total, na.rm = TRUE)) %>%
-  ungroup() %>%
-  arrange(
-    desc(sum_damage_total),
-  ) 
-```
-
-```{r joining}
-combined_data <- severe_details %>%
-  full_join(fatalities, by = "event_id")
-```
- 
-```{r not combined}
-not_combined_data <- not_severe_details %>%
-  full_join(fatalities, by = "event_id")
-```
-
-When analyzing the total number of weather events, we found Texas experienced significantly more weather events than any other state. This could potentially be explained by its considerably large size. 
-
-```{r not severe frequency events}
-not_frequency_by_region <-not_combined_data%>%
-  group_by(region) %>%
-  summarize(
-    no_events = n_distinct(event_id)) %>%
-  mutate(no_events = no_events) %>%
-  ungroup()
- 
-not_total_events <- not_combined_data %>%
-  summarize(total_events = n_distinct(event_id)) %>%
-  pull(total_events)
-  
-not_frequency_by_region <- not_frequency_by_region %>%
-  mutate(not_total_events= total_events)
- 
-not_combined_data <- not_combined_data %>%
-  left_join(not_frequency_by_region, by="region")
- 
-```
- 
-```{r not severe event frequency map}
-not_combined_data <- not_combined_data %>% 
-  mutate(region = tolower(region))
- 
-not_frequency_by_region <- not_frequency_by_region %>%
-  mutate(region = tolower(region))
- 
-             
-usa_map <- map_data("state")
-             
-map_combined <- usa_map %>% 
-  left_join(not_frequency_by_region, by = "region") 
- 
- 
-map_combined %>% 
-  ggplot(
-    mapping = aes(
-      x = long, y = lat, group = group, fill = no_events)
-  ) +
-  geom_polygon() +
-  scale_fill_gradient(low = "yellow", high = "red", name = "Number of events") + 
-  labs(
-    title = "Number of all weather events experienced per state") +
-  theme_minimal()
-```
-
-With the filtered data, analyzed which states experienced severe weather events and how often. From this we found Florida, Texas and California endured the highest frequency of severe weather events. 
-
-```{r  frequency events}
-frequency_by_region <-combined_data%>%
-  group_by(region) %>%
-  summarize(
-    no_events = n_distinct(event_id)) %>%
-  mutate(no_events = no_events) %>%
-  ungroup()
- 
-total_events <- combined_data %>%
-  summarize(total_events = n_distinct(event_id)) %>%
-  pull(total_events)
-  
-frequency_by_region <- frequency_by_region %>%
-  mutate(total_events= total_events)
- 
-combined_data <- combined_data %>%
-  left_join(frequency_by_region, by="region")
- 
-```
- 
-```{r event frequency map}
- 
-combined_data <- combined_data %>% 
-  mutate(region = tolower(region))
- 
-frequency_by_region <- frequency_by_region %>%
-  mutate(region = tolower(region))
- 
-             
-usa_map <- map_data("state")
-             
-map_combined <- usa_map %>% 
-  left_join(frequency_by_region, by = "region") 
- 
- 
-map_combined %>% 
-  ggplot(
-    mapping = aes(
-      x = long, y = lat, group = group, fill = no_events)
-  ) +
-  geom_polygon() +
-  scale_fill_gradient(low = "yellow", high = "red", name = "Number of severe events") + 
-  labs(
-    title = "Map of the USA",
-    subtitle = "Most severe weather events experienced per state") +
-  theme_minimal()
-```
-
-When comparing this data to the total number of fatalities caused by all weather events, we found that, as predicted, Florida, California, and Texas all experienced a high fatality rate. However, unexpectedly Arizona showed a high number of fatalities, even though they did not experience a lot of severe weather. 
-
-```{r not fatalities  map}
- 
-not_combined_data <- not_combined_data %>% 
-  mutate(region = tolower(region))
- 
-fatalities_by_region <- fatalities_by_region %>%
-  mutate(region = tolower(region))
- 
-             
-usa_map <- map_data("state")
-             
-map_combined <- usa_map %>% 
-  left_join(fatalities_by_region, by = "region") 
- 
-map_combined
- 
-map_combined %>% 
-  ggplot(
-    mapping = aes(
-      x = long, y = lat, group = group, fill = no_fatalities)
-  ) +
-  geom_polygon() +
-  scale_fill_gradient(low = "yellow", high = "red", name = "Number of fatalities") + 
-  labs(
-    title = "Number of fatalities per state") +
-  theme_minimal()
-```
-
-Finally, we compared the results found to the total damages caused by severe weather events and much of what we discovered was to be expected, with Florida, Texas, California and Arizona all having experienced a high degree of total damages caused by severe weather events. However, many states experienced similar high damage costs while experiencing drastically less frequent severe weather events. From this we concluded that it could potentially stem from the lack of sufficient infrastructure in place to prepare for storm events, especially compared to states experiencing severe weather events frequently. 
-
-```{r map damage}
- 
-#load map data
-combined_data <- combined_data %>% 
-      mutate(region = tolower(region))
-             
-usa_map <- map_data("state")     
-             
-map_combined<- combined_data%>% 
-  full_join(usa_map)
- 
-# Plot the map
-map_combined %>% 
-  ggplot(
-    mapping = aes(
-      x = long, y = lat, group = group, fill = log(sum_damage_total)
-    )
-  ) +
-  geom_polygon() +
-  scale_fill_gradient(low = "yellow", high = "red", name = "Total Damage ($)") + 
-  labs(title = "States experiencing the most damage") +
-  theme_minimal()
-```
 
 
 
