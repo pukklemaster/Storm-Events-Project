@@ -16,6 +16,23 @@ knitr::opts_chunk$set(echo = TRUE)
 library(tidyverse)
 library(tidymodels)
 library(janitor) #converts variable names to snake_case
+library(tidyverse)
+library(janitor)
+library(workflows)
+library(parsnip)
+library(tidyclust)
+library(tidymodels)
+library(usmap)
+library(gghighlight)
+library(knitr)
+library(xaringanExtra)
+library(doParallel)
+xaringanExtra::use_panelset()
+library(tidyverse)
+library(tidymodels)
+library(janitor)
+library(broom)
+library(patchwork)
 ```
 
 ```{r load-data}
@@ -1068,6 +1085,324 @@ storm_pred %>%
 
 
 
+ 
+ 
+# Event Type Averages and Data Limitations 
+ 
+We split event types into two categories: more/less damaging/deadly (compared to the mean). This was used to assess whether increased damages and fatalities over time were reflected equally in both severe and less severe storm events. 
+ 
+```{r chunk_1}
+# Rename redundant event type names
+  details <- details %>%
+    mutate(event_type = replace(event_type, event_type == "Hurricane (Typhoon)", "Hurricane"))
+ 
+# Select relevant columns and replace NA values
+details_selected <- details %>%
+  select(event_type, deaths_direct, deaths_indirect, damage_total, begin_dt) %>%  
+  mutate(
+    year = as.numeric(format(as.Date(begin_dt, format = "%Y-%m-%d"), "%Y"))  
+  ) %>%
+  na.omit()
+ 
+# Calculate total fatalities and damage per event, and group by event type
+details_grouped <- details_selected %>%
+  mutate(
+    fatalities_total = deaths_direct + deaths_indirect
+  ) %>%
+  group_by(event_type) %>%
+  summarise(
+    avg_fatalities_by_type = mean(fatalities_total, na.rm = TRUE),  
+    avg_damage_by_type = mean(damage_total, na.rm = TRUE)  
+  ) %>%
+  ungroup()
+ 
+# Calculate global averages and assign groups
+global_averages <- details_grouped %>%
+  summarise(
+    global_avg_fatalities = mean(avg_fatalities_by_type, na.rm = TRUE),  
+    global_avg_damage = mean(avg_damage_by_type, na.rm = TRUE)  
+  )
+ 
+# Add grouping for more/less deadly and damaging based on global averages
+details_grouped <- details_grouped %>%
+  mutate(
+    fatality_group = if_else(avg_fatalities_by_type > global_averages$global_avg_fatalities,
+                             "More Deadly", "Less Deadly"),
+    damage_group = if_else(avg_damage_by_type > global_averages$global_avg_damage,
+                           "More Damaging", "Less Damaging")
+  )
+```
+We used mean impact for the analysis of changes in fatalities and damages due to the possibility of stronger storms overall or greater storm frequency over time. 
+ 
+```{r chunk_2}
+# Adjusted Graph for Fatalities (All Data)
+fatality_graph <- details_grouped %>%
+  ggplot(aes(x = fatality_group, 
+             y = avg_fatalities_by_type, 
+             fill = fatality_group)) +
+  stat_summary(fun = "mean", geom = "bar", position = "dodge", alpha = 0.7) +
+    geom_text(stat = "summary", fun = "mean", aes(label = round(after_stat(y), 2)), 
+            vjust = -0.5, size = 3) +
+  scale_fill_manual(values = c("More Deadly" = "red", "Less Deadly" = "green")) +
+  labs(
+    title = "Average Fatalities by Group",
+    subtitle = "Based on Event Type Averages Compared to Global Average",
+    x = "Weather Group",  
+    y = "Average Fatalities per Event Type",
+    fill = NULL
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    plot.subtitle = element_text(size = 6.5),  
+    axis.text.x = element_text(size = 5)  
+  )
+ 
+# Adjusted Graph for Damages (All Data)
+damage_graph <- details_grouped %>%
+  ggplot(aes(x = damage_group, 
+             y = avg_damage_by_type, 
+             fill = damage_group)) +
+  stat_summary(fun = "mean", geom = "bar", position = "dodge", alpha = 0.7) +
+    geom_text(stat = "summary", fun = "mean", aes(label = round(after_stat(y), 2)), 
+            vjust = -0.5, size = 3) +
+  scale_fill_manual(values = c("More Damaging" = "purple", "Less Damaging" = "orange")) +
+  labs(
+    title = "Average Damages by Group",
+    subtitle = "Based on Event Type Averages Compared to Global Average",
+    x = "Weather Group", 
+    y = "Average Damages per Event Type (USD)",
+    fill = NULL
+  ) +
+  theme_minimal() +
+  theme(
+    legend.position = "bottom",
+    plot.subtitle = element_text(size = 6.5), 
+    axis.text.x = element_text(size = 5)  
+  )
+ 
+# Combine  plots
+combined_original <- fatality_graph + damage_graph
+ 
+# Display plots
+combined_original
+```
+ 
+We repeated this process for 1996–7 and 2022–3, using two-year periods to minimise the impact of outliers. 
+```{r chunk_3 / table_1}
+# Filter for 1996
+details_1996_7 <- details_selected %>% filter(year %in% c(1996, 1997))
+details_grouped_1996_7 <- details_1996_7 %>%
+  mutate(fatalities_total = deaths_direct + deaths_indirect) %>%
+  group_by(event_type) %>%
+  summarise(
+    avg_fatalities_by_type = mean(fatalities_total, na.rm = TRUE),
+    avg_damage_by_type = mean(damage_total, na.rm = TRUE)
+  ) %>%
+  ungroup()
+ 
+# Recalculate global averages for 1996 data
+global_averages_1996_7 <- details_grouped_1996_7 %>%
+  summarise(
+    global_avg_fatalities = mean(avg_fatalities_by_type, na.rm = TRUE),
+    global_avg_damage = mean(avg_damage_by_type, na.rm = TRUE)
+  )
+ 
+# Add grouping for 1996 data
+details_grouped_1996_7 <- details_grouped_1996_7 %>%
+  mutate(
+    fatality_group = if_else(avg_fatalities_by_type > global_averages_1996_7$global_avg_fatalities,
+                             "More Deadly", "Less Deadly"),
+    damage_group = if_else(avg_damage_by_type > global_averages_1996_7$global_avg_damage,
+                           "More Damaging", "Less Damaging")
+  )
+```
+ 
+### Labeled graph for the 1996-7 period:
+```{r chunk_4, echo=FALSE}
+# Adjusted Graph for 1996 Fatalities
+fatality_graph_1996_7 <- details_grouped_1996_7 %>%
+  ggplot(aes(x = fatality_group, 
+             y = avg_fatalities_by_type, 
+             fill = fatality_group)) +
+  stat_summary(fun = "mean", geom = "bar", position = "dodge", alpha = 0.7) +
+    geom_text(stat = "summary", fun = "mean", aes(label = round(after_stat(y), 2)), 
+            vjust = -0.5, size = 3) +
+  labs(title = "1996-7: Fatalities by Group", subtitle = "Data from 1996-7", 
+       x = "Weather Group",  
+       y = "Average Fatalities") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(size = 5) 
+  )
+ 
+# Adjusted Graph for 1996 Damages
+damage_graph_1996_7 <- details_grouped_1996_7 %>%
+  ggplot(aes(x = damage_group, 
+             y = avg_damage_by_type, 
+             fill = damage_group)) +
+  stat_summary(fun = "mean", geom = "bar", position = "dodge", alpha = 0.7) +
+    geom_text(stat = "summary", fun = "mean", aes(label = round(after_stat(y), 2)), 
+            vjust = -0.5, size = 3) +
+  labs(title = "1996-7: Damages by Group", subtitle = "Data from 1996-7", 
+       x = "Weather Group",  
+       y = "Average Damages (USD)") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(size = 5)  
+  )
+ 
+# Combine plots
+combined_1996_7 <- fatality_graph_1996_7 + damage_graph_1996_7
+ 
+# Display plots
+combined_1996_7
+```
+ 
+### Labeled graph for the 2022-3 period:
+```{r chunk_5, echo=FALSE}
+# Filter for 2022-3
+details_2022_3 <- details_selected %>% filter(year %in% c(2022, 2023))
+details_grouped_2022_3 <- details_2022_3 %>%
+  mutate(fatalities_total = deaths_direct + deaths_indirect) %>%
+  group_by(event_type) %>%
+  summarise(
+    avg_fatalities_by_type = mean(fatalities_total, na.rm = TRUE),
+    avg_damage_by_type = mean(damage_total, na.rm = TRUE)
+  ) %>%
+  ungroup()
+ 
+# Recalculate global averages for 2022-3 data
+global_averages_2022_3 <- details_grouped_2022_3 %>%
+  summarise(
+    global_avg_fatalities = mean(avg_fatalities_by_type, na.rm = TRUE),
+    global_avg_damage = mean(avg_damage_by_type, na.rm = TRUE)
+  )
+ 
+# Add grouping for 2022-3 data
+details_grouped_2022_3 <- details_grouped_2022_3 %>%
+  mutate(
+    fatality_group = if_else(avg_fatalities_by_type > global_averages_2022_3$global_avg_fatalities,
+                             "More Deadly", "Less Deadly"),
+    damage_group = if_else(avg_damage_by_type > global_averages_2022_3$global_avg_damage,
+                           "More Damaging", "Less Damaging")
+  )
+ 
+# Adjusted Graph for 2022-3 Fatalities
+fatality_graph_2022_3 <- details_grouped_2022_3 %>%
+  ggplot(aes(x = fatality_group, 
+             y = avg_fatalities_by_type, 
+             fill = fatality_group)) +
+  stat_summary(fun = "mean", geom = "bar", position = "dodge", alpha = 0.7) +
+    geom_text(stat = "summary", fun = "mean", aes(label = round(after_stat(y), 2)), 
+            vjust = -0.5, size = 3) +
+  labs(title = "2022-3: Fatalities by Group", subtitle = "Data from 2022-3", 
+       x = "Weather Group",  
+       y = "Average Fatalities") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(size = 5)  
+  )
+ 
+# Adjusted Graph for 2022-3 Damages
+damage_graph_2022_3 <- details_grouped_2022_3 %>%
+  ggplot(aes(x = damage_group, 
+             y = avg_damage_by_type, 
+             fill = damage_group)) +
+  stat_summary(fun = "mean", geom = "bar", position = "dodge", alpha = 0.7) +
+    geom_text(stat = "summary", fun = "mean", aes(label = round(after_stat(y), 2)), 
+            vjust = -0.5, size = 3) +
+  labs(title = "2022-3: Damages by Group", subtitle = "Data from 2022-3", 
+       x = "Weather Group",  
+       y = "Average Damages (USD)") +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(size = 5)  
+  )
+ 
+# Combine plots
+combined_2022_3 <- fatality_graph_2022_3 + damage_graph_2022_3
+ 
+# Display plots
+combined_2022_3
+```
+Below are the tibbles showing event types, classifications, and impact averages for the entire dataset, 1996–7, and 2022–3. This allows us to view the changes and cla
+``` {r chunk_6, echo=FALSE}
+# Exact values for the original chart
+details_grouped %>%
+  select(event_type, fatality_group, damage_group, avg_fatalities_by_type, avg_damage_by_type) %>%
+  arrange(fatality_group, damage_group)
+ 
+# Exact values for 1996-7
+details_grouped_1996_7 %>%
+  select(event_type, fatality_group, damage_group, avg_fatalities_by_type, avg_damage_by_type) %>%
+  arrange(fatality_group, damage_group) 
+ 
+# Exact values for 2022-3
+details_grouped_2022_3 %>%
+  select(event_type, fatality_group, damage_group, avg_fatalities_by_type, avg_damage_by_type) %>%
+  arrange(fatality_group, damage_group)
+```
+## Changes
+All averaged values decreased from 1996–7 to 2022–3. 
+First, by creating and joining the year groups, we produced a tibble showing the percent and absolute change for each event type. Next, we calculated percent and absolute changes for the global averages of each period. Finally, we generated a simple percent change for each more/less category. 
+``` {r chunk_7}
+# Create year groups
+details_grouped_1996_7 <- details_grouped_1996_7 %>%
+  mutate(year_group = "1996-1997")
+ 
+details_grouped_2022_3 <- details_grouped_2022_3 %>%
+  mutate(year_group = "2022-2023")
+ 
+# Combine the data-sets
+combined_data <- full_join(
+  details_grouped_1996_7, 
+  details_grouped_2022_3, 
+  by = "event_type", 
+  suffix = c("_1996_7", "_2022_3")
+)
+ 
+# Calculate differences and percentage changes
+combined_data <- combined_data %>%
+  mutate(
+    change_fatalities = avg_fatalities_by_type_2022_3 - avg_fatalities_by_type_1996_7,
+    change_damage = avg_damage_by_type_2022_3 - avg_damage_by_type_1996_7,
+    percent_change_fatalities = (change_fatalities / avg_fatalities_by_type_1996_7) * 100,
+    percent_change_damage = (change_damage / avg_damage_by_type_1996_7) * 100
+  )
+ 
+# View
+combined_data %>%
+  select(event_type, change_fatalities, percent_change_fatalities, change_damage, percent_change_damage)
+ 
+# Compare the global averages between the two groups
+comparison <- tibble(
+  metric = c("Fatalities", "Damages"),
+  avg_1996_7 = c(global_averages_1996_7$global_avg_fatalities, global_averages_1996_7$global_avg_damage),
+  avg_2022_3 = c(global_averages_2022_3$global_avg_fatalities, global_averages_2022_3$global_avg_damage),
+  absolute_change = avg_2022_3 - avg_1996_7,
+  percent_change = (absolute_change / avg_1996_7) * 100
+)
+ 
+# View
+comparison
+ 
+# Final category changes calculations
+Percent_change_less_fatalities <- ((.02-.03)/.03)*100
+Percent_change_more_fatalities <- ((.55-1.07)/1.07)*100
+Percent_change_less_damages <- ((46507.11-384199.67)/384199.67)*100
+Percent_change_more_damages <- ((6543117.28-7033105.21)/7033105.21)*100 
+ 
+# Laying it all out
+Percent_change_less_fatalities
+Percent_change_more_fatalities
+Percent_change_less_damages
+Percent_change_more_damages
+```
+ 
+# Findings
+While total damages and fatalities rose, average impact per event declined. This suggests that increased storm frequency has affected people and property more than storm strength.  
+However, a limitation of this dataset is the inability to fully assess storm severity without accounting for infrastructure strength, which was unavailable. 
 
 
 
