@@ -290,6 +290,22 @@ details <- details %>%
 
 
 
+## Changes in Storm Event Frequency Over Time
+
+To identify how storm events have changed over time we used a linear regression model attempting to predict the number of storm events per year.
+We grouped event frequencies by year to balance statistical significance and trend visibility as smaller groups were skewed by outliers, while larger ones (e.g., 5-year periods) lacked sufficient detail to show trends over time.
+To do this, we created the variable events_per_year by summing event frequencies annually and ran the regression: lm(event_count ~ year, data = events_per_year).
+The results predicted for every one-year increase there will be, on average, an additional 774.2 storm events per year.
+These results are statistically significant (p > 0.01, R-squared = 0.5358) with over half of the variation in event count per year explained by the variable year.
+
+We created similar models predicting fatalities and damages per year.
+These models predict that for every additional year, on average, fatalities will increase by 15.3 and damages will increase by $447 million.
+Both these results have p-values < 0.05 and are statistically significant.
+However, the R-squared values are low (0.3 for damages and 0.2 for fatalities), indicating there are other factors with a significant influence.
+
+
+
+
 
 
 
