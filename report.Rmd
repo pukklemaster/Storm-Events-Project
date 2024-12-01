@@ -19,9 +19,130 @@ library(janitor) #converts variable names to snake_case
 ```
 
 ```{r load-data}
+details = read_csv('data/original_data/details_combined.csv')
+fatalities = read_csv('data/original_data/fatalities_combined.csv')
+```
 
-details = read_csv('data/details_combined.csv')
-fatalities = read_csv('data/fatalities_combined.csv')
+```{r Data Cleaning}
+# Merge and convert formats of begin-date variables
+details <- details %>%
+  # Combine date elements
+  unite("BEGIN_DATE", BEGIN_YEARMONTH, BEGIN_DAY, sep = "") %>% 
+  mutate(
+    # Convert date to a character for union with time
+    BEGIN_DATE = as.character(BEGIN_DATE),
+    # Add leading zero if the time is 3 digits
+    BEGIN_TIME = case_when(
+      BEGIN_TIME < 1000 ~ sprintf("%04d", BEGIN_TIME),
+      TRUE ~ as.character(BEGIN_TIME)
+    )
+  ) %>%
+  # Unite date and time into one string
+  unite("BEGIN_DT", BEGIN_DATE, BEGIN_TIME, sep = " ") %>%
+  mutate(
+    # Convert to a datetime
+    BEGIN_DT = ymd_hm(BEGIN_DT)
+  )
+
+# Merge and convert formats of end-date variables
+details <- details %>%
+  # Combine date elements
+  unite("END_DATE", END_YEARMONTH, END_DAY, sep = "") %>% 
+  mutate(
+    # Convert date to a character for union with time
+    END_DATE = as.character(END_DATE),
+    # Add leading zero if the time is 3 digits
+    END_TIME = case_when(
+      END_TIME < 1000 ~ sprintf("%04d", END_TIME),
+      TRUE ~ as.character(END_TIME)
+    )
+  ) %>%
+  # Unite date and time into one string
+  unite("END_DT", END_DATE, END_TIME, sep = " ") %>%
+  mutate(
+    # Convert to a datetime
+    END_DT = ymd_hm(END_DT)
+  )
+
+# Remove unnecessary columns
+details <- details %>%
+  select(
+    -c(YEAR, MONTH_NAME, BEGIN_DATE_TIME, END_DATE_TIME, 
+       EVENT_NARRATIVE, EPISODE_NARRATIVE
+    )
+  )
+
+# Rename incorrect column names
+details <- details %>%
+  rename(
+    REGION = STATE,
+    REGION_FIPS = STATE_FIPS
+  )
+
+# Create duration variable 
+details <- details %>% 
+  mutate(
+    duration = END_DT - BEGIN_DT
+  ) %>% 
+    mutate(
+      duration = as.numeric(duration) / 60
+    )
+
+# Change cost suffixes
+details <- details %>% 
+  mutate(
+    DAMAGE_PROPERTY = as.numeric(gsub("K", "e+03", gsub("M", "e+06", DAMAGE_PROPERTY))),
+    DAMAGE_CROPS = as.numeric(gsub("K", "e+03", gsub("M", "e+06", DAMAGE_CROPS)))
+  )
+
+# Create a total damage column using crops and property
+details <- details %>%
+  mutate(
+    DAMAGE_TOTAL = DAMAGE_PROPERTY + DAMAGE_CROPS
+  )
+
+# Remove all records pertaining to an incomplete year
+details <- details %>% 
+  filter(
+    !year(BEGIN_DT) == '2024'
+  )
+
+# Use janitor to convert variable names to snakecase
+details <- details %>% 
+  clean_names()
+
+# Tidy the fatalities DataFrame
+fatalities <- fatalities %>% 
+  select(
+    -FAT_TIME, -FATALITY_DATE, -EVENT_YEARMONTH
+  ) %>% 
+    mutate(
+      YMD = ymd(paste(FAT_YEARMONTH, FAT_DAY))
+    ) %>% 
+      select(
+        -FAT_DAY, -FAT_YEARMONTH
+      )
+
+# Remove 2024 records
+fatalities <- fatalities %>%
+  filter(
+    !year(YMD) == '2024'
+  )
+
+# Use janitor to convert variables to snakecase
+fatalities <- fatalities %>% 
+  clean_names()
+
+details <- details %>%
+  mutate(
+    event_type = recode(
+      event_type,
+      "Hurricane (Typhoon)" = "Hurricane"
+    )
+  )
+
+#write_rds(details, "data/clean_data/details_clean.rds", compress = "gz")
+#write_rds(fatalities, "data/clean_data/fatalities_clean.rds")
 ```
 
 ## Research Question
@@ -164,6 +285,216 @@ details <- details %>%
 #write_rds(details, "../clean_data/details_clean.rds", compress = "gz")
 #write_rds(fatalities, "../clean_data/fatalities_clean.rds")
 ```
+
+
+
+
+
+
+
+
+
+
+
+```{r filter events}
+severe_details <- details %>%
+  select(-c(episode_id, wfo, source, region_fips, end_dt, region_fips, cz_type, cz_fips, cz_name, cz_timezone, injuries_direct, injuries_indirect, deaths_direct, deaths_indirect, flood_cause, category, tor_f_scale, tor_length, tor_width, tor_other_wfo, tor_other_cz_state, tor_other_cz_fips, tor_other_cz_name, begin_azimuth, end_azimuth, begin_lon, begin_lat, end_lon, end_lat, duration, magnitude_type, begin_range, begin_location, end_range)) %>%
+  group_by(event_type) %>%
+  mutate(sum_damage_total = sum(damage_total, na.rm = TRUE)) %>%
+  ungroup() %>%
+  arrange(
+    desc(sum_damage_total),
+  ) %>%
+  distinct(event_type, .keep_all = TRUE) 
+
+```
+
+```{r not severe}
+not_severe_details <- details %>%
+  select(-c(episode_id, wfo, source, region_fips, end_dt, region_fips, cz_type, cz_fips, cz_name, cz_timezone, injuries_direct, injuries_indirect, deaths_direct, deaths_indirect, flood_cause, category, tor_f_scale, tor_length, tor_width, tor_other_wfo, tor_other_cz_state, tor_other_cz_fips, tor_other_cz_name, begin_azimuth, end_azimuth, begin_lon, begin_lat, end_lon, end_lat, duration, magnitude_type, begin_range, begin_location, end_range)) %>%
+  group_by(event_type) %>%
+  mutate(sum_damage_total = sum(damage_total, na.rm = TRUE)) %>%
+  ungroup() %>%
+  arrange(
+    desc(sum_damage_total),
+  ) 
+```
+
+```{r joining}
+combined_data <- severe_details %>%
+  full_join(fatalities, by = "event_id")
+```
+ 
+```{r not combined}
+not_combined_data <- not_severe_details %>%
+  full_join(fatalities, by = "event_id")
+```
+
+When analyzing the total number of weather events, we found Texas experienced significantly more weather events than any other state. This could potentially be explained by its considerably large size. 
+
+```{r not severe frequency events}
+not_frequency_by_region <-not_combined_data%>%
+  group_by(region) %>%
+  summarize(
+    no_events = n_distinct(event_id)) %>%
+  mutate(no_events = no_events) %>%
+  ungroup()
+ 
+not_total_events <- not_combined_data %>%
+  summarize(total_events = n_distinct(event_id)) %>%
+  pull(total_events)
+  
+not_frequency_by_region <- not_frequency_by_region %>%
+  mutate(not_total_events= total_events)
+ 
+not_combined_data <- not_combined_data %>%
+  left_join(not_frequency_by_region, by="region")
+ 
+```
+ 
+```{r not severe event frequency map}
+not_combined_data <- not_combined_data %>% 
+  mutate(region = tolower(region))
+ 
+not_frequency_by_region <- not_frequency_by_region %>%
+  mutate(region = tolower(region))
+ 
+             
+usa_map <- map_data("state")
+             
+map_combined <- usa_map %>% 
+  left_join(not_frequency_by_region, by = "region") 
+ 
+ 
+map_combined %>% 
+  ggplot(
+    mapping = aes(
+      x = long, y = lat, group = group, fill = no_events)
+  ) +
+  geom_polygon() +
+  scale_fill_gradient(low = "yellow", high = "red", name = "Number of events") + 
+  labs(
+    title = "Number of all weather events experienced per state") +
+  theme_minimal()
+```
+
+With the filtered data, analyzed which states experienced severe weather events and how often. From this we found Florida, Texas and California endured the highest frequency of severe weather events. 
+
+```{r  frequency events}
+frequency_by_region <-combined_data%>%
+  group_by(region) %>%
+  summarize(
+    no_events = n_distinct(event_id)) %>%
+  mutate(no_events = no_events) %>%
+  ungroup()
+ 
+total_events <- combined_data %>%
+  summarize(total_events = n_distinct(event_id)) %>%
+  pull(total_events)
+  
+frequency_by_region <- frequency_by_region %>%
+  mutate(total_events= total_events)
+ 
+combined_data <- combined_data %>%
+  left_join(frequency_by_region, by="region")
+ 
+```
+ 
+```{r event frequency map}
+ 
+combined_data <- combined_data %>% 
+  mutate(region = tolower(region))
+ 
+frequency_by_region <- frequency_by_region %>%
+  mutate(region = tolower(region))
+ 
+             
+usa_map <- map_data("state")
+             
+map_combined <- usa_map %>% 
+  left_join(frequency_by_region, by = "region") 
+ 
+ 
+map_combined %>% 
+  ggplot(
+    mapping = aes(
+      x = long, y = lat, group = group, fill = no_events)
+  ) +
+  geom_polygon() +
+  scale_fill_gradient(low = "yellow", high = "red", name = "Number of severe events") + 
+  labs(
+    title = "Map of the USA",
+    subtitle = "Most severe weather events experienced per state") +
+  theme_minimal()
+```
+
+When comparing this data to the total number of fatalities caused by all weather events, we found that, as predicted, Florida, California, and Texas all experienced a high fatality rate. However, unexpectedly Arizona showed a high number of fatalities, even though they did not experience a lot of severe weather. 
+
+```{r not fatalities  map}
+ 
+not_combined_data <- not_combined_data %>% 
+  mutate(region = tolower(region))
+ 
+fatalities_by_region <- fatalities_by_region %>%
+  mutate(region = tolower(region))
+ 
+             
+usa_map <- map_data("state")
+             
+map_combined <- usa_map %>% 
+  left_join(fatalities_by_region, by = "region") 
+ 
+map_combined
+ 
+map_combined %>% 
+  ggplot(
+    mapping = aes(
+      x = long, y = lat, group = group, fill = no_fatalities)
+  ) +
+  geom_polygon() +
+  scale_fill_gradient(low = "yellow", high = "red", name = "Number of fatalities") + 
+  labs(
+    title = "Number of fatalities per state") +
+  theme_minimal()
+```
+
+Finally, we compared the results found to the total damages caused by severe weather events and much of what we discovered was to be expected, with Florida, Texas, California and Arizona all having experienced a high degree of total damages caused by severe weather events. However, many states experienced similar high damage costs while experiencing drastically less frequent severe weather events. From this we concluded that it could potentially stem from the lack of sufficient infrastructure in place to prepare for storm events, especially compared to states experiencing severe weather events frequently. 
+
+```{r map damage}
+ 
+#load map data
+combined_data <- combined_data %>% 
+      mutate(region = tolower(region))
+             
+usa_map <- map_data("state")     
+             
+map_combined<- combined_data%>% 
+  full_join(usa_map)
+ 
+# Plot the map
+map_combined %>% 
+  ggplot(
+    mapping = aes(
+      x = long, y = lat, group = group, fill = log(sum_damage_total)
+    )
+  ) +
+  geom_polygon() +
+  scale_fill_gradient(low = "yellow", high = "red", name = "Total Damage ($)") + 
+  labs(title = "States experiencing the most damage") +
+  theme_minimal()
+```
+
+
+
+
+
+
+
+
+
+
+
+
 
 ## Findings
 
