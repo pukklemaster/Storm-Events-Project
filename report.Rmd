@@ -1,76 +1,213 @@
 ---
-title: "Just Commit"
+title: "Weather in the United States (1996-2023)"
 author: "by Just Commit (Group number: 17): Olivia Harris, Maxwell Pohlmann, Sarah Stewart, Helen Miller, Andrew Morris, & Adam Laycock"
 date: "`r Sys.Date()`"
 output: html_document
+editor_options: 
+  markdown: 
+    wrap: sentence
 ---
 
 ```{r setup, include = FALSE}
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-
-```{r load-lib, include = FALSE}
+```{r load-lib}
 library(tidyverse)
-library(janitor)
-
-
+library(tidymodels)
+library(janitor) #converts variable names to snake_case
 ```
 
+```{r load-data}
 
-```{r load-data, include=FALSE}
-
-#details = read_csv('Data/details_combined.csv')
-#fatalities = read_csv('Data/fatalities_combined.csv')
-
+details = read_csv('data/details_combined.csv')
+fatalities = read_csv('data/fatalities_combined.csv')
 ```
-
 
 ## Research Question
 
-Describe your research question here. Include why this question might be of interest. 
+How have storm events changed over time, and what are the personal and monetary effects of these changes?
 
-
-
-
+We chose to investigate this question due to the increasingly dramatic shifts in climate observed in recent years.
+Many of these changes seem to be significantly impacting the United States, and we wanted to explore those impacts in our data.
 
 ## Data
 
-Briefly describe your dataset here - include a description of the key variables you will be investigating. 
-Include a citation for your data. 
-See http://libraryguides.vu.edu.au/c.php?g=386501&p=4347840 for guidance on proper citation for datasets. 
-If you got your data off the web, make sure to state the retrieval date.
+Our data was sourced from the Storm Events Database of the National Oceanic and Atmospheric Administration (NOAA).
+The NOAA collects data on weather events in the United States.
+This includes information on event location, 50 variables related to event details (including, notably, time of occurance and damages), and 10 variables related to event fatalities.
+In our analysis, we focused on over 1.6 million observations collected between 1996 and 2023.
 
-We did cleaning on the data by cleaning the names, removing unwanted variables, joining dates with lubridate, and making the cost of damages into one column whilst turning it from character to double data type.
+In our initial cleaning, we notably removed unwanted variables such as event narrative (a multi-sentence description of the event), merged date columns and converted them to date-times with `lubridate,` and added a column for total damage cost (summing crop and property damage).
+All damage information was converted from a string to a double.
+The cleaning script can be found in it's entirety in r `cleaning_script`.
 
+```{r cleaning_script}
+# Merge and convert formats of begin-date variables
+details <- details %>%
+  # Combine date elements
+  unite("BEGIN_DATE", BEGIN_YEARMONTH, BEGIN_DAY, sep = "") %>% 
+  mutate(
+    # Convert date to a character for union with time
+    BEGIN_DATE = as.character(BEGIN_DATE),
+    # Add leading zero if the time is 3 digits
+    BEGIN_TIME = case_when(
+      BEGIN_TIME < 1000 ~ sprintf("%04d", BEGIN_TIME),
+      TRUE ~ as.character(BEGIN_TIME)
+    )
+  ) %>%
+  # Unite date and time into one string
+  unite("BEGIN_DT", BEGIN_DATE, BEGIN_TIME, sep = " ") %>%
+  mutate(
+    # Convert to a datetime
+    BEGIN_DT = ymd_hm(BEGIN_DT)
+  )
 
+# Merge and convert formats of end-date variables
+details <- details %>%
+  # Combine date elements
+  unite("END_DATE", END_YEARMONTH, END_DAY, sep = "") %>% 
+  mutate(
+    # Convert date to a character for union with time
+    END_DATE = as.character(END_DATE),
+    # Add leading zero if the time is 3 digits
+    END_TIME = case_when(
+      END_TIME < 1000 ~ sprintf("%04d", END_TIME),
+      TRUE ~ as.character(END_TIME)
+    )
+  ) %>%
+  # Unite date and time into one string
+  unite("END_DT", END_DATE, END_TIME, sep = " ") %>%
+  mutate(
+    # Convert to a datetime
+    END_DT = ymd_hm(END_DT)
+  )
 
+# Remove unnecessary columns
+details <- details %>%
+  select(
+    -c(YEAR, MONTH_NAME, BEGIN_DATE_TIME, END_DATE_TIME, 
+       EVENT_NARRATIVE, EPISODE_NARRATIVE
+    )
+  )
+
+# Rename incorrect column names
+details <- details %>%
+  rename(
+    REGION = STATE,
+    REGION_FIPS = STATE_FIPS
+  )
+
+# Create duration variable 
+details <- details %>% 
+  mutate(
+    duration = END_DT - BEGIN_DT
+  ) %>% 
+    mutate(
+      duration = as.numeric(duration) / 60
+    )
+
+# Change cost suffixes
+details <- details %>% 
+  mutate(
+    DAMAGE_PROPERTY = as.numeric(gsub("K", "e+03", gsub("M", "e+06", DAMAGE_PROPERTY))),
+    DAMAGE_CROPS = as.numeric(gsub("K", "e+03", gsub("M", "e+06", DAMAGE_CROPS)))
+  )
+
+# Create a total damage column using crops and property
+details <- details %>%
+  mutate(
+    DAMAGE_TOTAL = DAMAGE_PROPERTY + DAMAGE_CROPS
+  )
+
+# Remove all records pertaining to an incomplete year
+details <- details %>% 
+  filter(
+    !year(BEGIN_DT) == '2024'
+  )
+
+# Use janitor to convert variable names to snakecase
+details <- details %>% 
+  clean_names()
+
+# Tidy the fatalities DataFrame
+fatalities <- fatalities %>% 
+  select(
+    -FAT_TIME, -FATALITY_DATE, -EVENT_YEARMONTH
+  ) %>% 
+    mutate(
+      YMD = ymd(paste(FAT_YEARMONTH, FAT_DAY))
+    ) %>% 
+      select(
+        -FAT_DAY, -FAT_YEARMONTH
+      )
+
+# Remove 2024 records
+fatalities <- fatalities %>%
+  filter(
+    !year(YMD) == '2024'
+  )
+
+# Use janitor to convert variables to snakecase
+fatalities <- fatalities %>% 
+  clean_names()
+
+details <- details %>%
+  mutate(
+    event_type = recode(
+      event_type,
+      "Hurricane (Typhoon)" = "Hurricane"
+    )
+  )
+
+#save cleaned data
+#write_rds(details, "../clean_data/details_clean.rds", compress = "gz")
+#write_rds(fatalities, "../clean_data/fatalities_clean.rds")
+```
 
 ## Findings
 
-The write-up of your project and findings go here. 
+## Changes in Storm Event Frequency Over Time
 
-Think of this as the text of your presentation with some extra detail to cover what there was not time to discuss in the presentation. This might include any assumptions you made when doing your analysis, any limitations of the work you have done or any ideas you have for future work. Feel free to split this section into subsections to make it easier to read. 
+To identify how storm events have changed over time we used a linear regression model attempting to predict the number of storm events per year.
+We grouped event frequencies by year to balance statistical significance and trend visibility as smaller groups were skewed by outliers, while larger ones (e.g., 5-year periods) lacked sufficient detail to show trends over time.
+To do this, we created the variable *`events_per_year`* by summing event frequencies annually and ran the regression: `lm(event_count ~ year, data = events_per_year)`.
+The results predicted for every one-year increase there will be, on average, an additional 774.2 storm events per year.
+These results are statistically significant (p \> 0.01, R-squared = 0.5358) with over half of the variation in event count per year explained by the variable year.
 
-The length should be roughly 1,500 words. 
+We created similar models predicting fatalities and damages per year.
+These models predict that for every additional year, on average, fatalities will increase by 15.3 and damages will increase by \$447 million.
+Both these results have p-values \< 0.05 and are statistically significant.
+However, the R-squared values are low (0.3 for damages and 0.2 for fatalities), indicating there are other factors with a significant influence.
+
+The write-up of your project and findings go here.
+
+Think of this as the text of your presentation with some extra detail to cover what there was not time to discuss in the presentation.
+This might include any assumptions you made when doing your analysis, any limitations of the work you have done or any ideas you have for future work.
+Feel free to split this section into subsections to make it easier to read.
+
+The length should be roughly 1,500 words.
 If you want to use a word count addin, you can install this by copying and pasting the following into RStudio:
 
 `devtools::install_github("benmarwick/wordcountaddin", type = "source", dependencies = TRUE)`
 
-You will then need to restart RStudio. Once you have done that, select the text you want to count the words of, go to Addins, and select the `Word count` addin.
-This addin counts words using two different algorithms, but the results should be similar and as long as you're in the ballpark of 1,500 words, you're good! 
-The addin will ignore code chunks and only count the words in prose. If you don't want to use the addin you can always copy and paste the text into Microsoft Word to do a Word Count!
+You will then need to restart RStudio.
+Once you have done that, select the text you want to count the words of, go to Addins, and select the `Word count` addin.
+This addin counts words using two different algorithms, but the results should be similar and as long as you're in the ballpark of 1,500 words, you're good!
+The addin will ignore code chunks and only count the words in prose.
+If you don't want to use the addin you can always copy and paste the text into Microsoft Word to do a Word Count!
 
 You can also load your data here and present any analysis results / plots.
-Make sure to hide your code with  `echo = FALSE` unless the point you are trying to make is about the code itself, in which case you should show your code.
+Make sure to hide your code with `echo = FALSE` unless the point you are trying to make is about the code itself, in which case you should show your code.
+
+## Impact of Storm Events
+
+We also chose to explore the impact of weather events across the United States. Initially, unessesary variables were removed from `details_clean.rds`.Then, the data was filtered to find the most severe weather events using `damage_total`, and stored in either `severe_details` and `not_severe_details`, with the latter containing all other weather events. This was then joined to `fatalities_clean.rds`.
 
 
-
+Considering the total number of weather events, we found Texas experienced significantly more weather events than any other state.This could potentially be explained by its considerable size.
 
 
 ## References
 
-NOAA Weather service, provided data for the project, accessed at URL: https://www.ncdc.noaa.gov/stormevents/faq.jsp
-NOAA Weather service, data format guide, accessed at URL: https://www.ncei.noaa.gov/pub/data/swdi/stormevents/csvfiles/Storm-Data-Bulk-csv-Format.pdf
-
-
+NOAA Weather service, provided data for the project, accessed at URL: <https://www.ncdc.noaa.gov/stormevents/faq.jsp> NOAA Weather service, data format guide, accessed at URL: <https://www.ncei.noaa.gov/pub/data/swdi/stormevents/csvfiles/Storm-Data-Bulk-csv-Format.pdf>
