@@ -9,7 +9,7 @@ editor_options:
 ---
 
 ```{r setup, include = FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = FALSE)
 ```
 
 ```{r load-lib}
@@ -1532,7 +1532,6 @@ proportions_enso %>%
 
 As a part of initial analysis, we noted a change in the slopes of event count grouped by ENSO status (Chunk 6). Events in La Niña years appear to be  increasing in monthly frequency at a slightly greater rate than those of a different ENSO status (Chunk 7).
 
-
 ```{r chunk_6}
 slope_exploration <- details_enso %>%
   #group by month to increase number of observations, avoid daily outliers
@@ -1705,6 +1704,192 @@ FORMAT THIS: <https://psl.noaa.gov/enso/past_events.html>
 
 
 
+
+
+When we analysed fatalities in the data, we wanted to look at underrepresented age groups in fatalities. We chose those between 0 and 13 years old and those who are 70 and over to be our groups of interest. We separated our weather events into weather categories to interpret the types of weather that affect each age group the most.
+
+```{r seperate weather events, echo=FALSE}
+
+events<- details %>% select(event_id, event_type)
+
+# Seperating events into categories
+# Marine - water related events or events relating to bodies of water
+# snow/ice - events related to cold or winter weather
+# Atmospheric - electric storms and other atmospheric events
+# Tropical - tropical weather events, hurricanes etc
+# heat/temp - events relating towards high temperatures or fire
+# rain - rain and hail
+
+events <-events %>% 
+  mutate(weather_cat = case_when(
+    event_type == "Astronomical Low Tide" ~ "Marine",
+    event_type == "Coastal Flood" ~ "Marine",
+    event_type == "Debris Flow" ~ "Marine",
+    event_type == "Flash Flood" ~ "Marine",
+    event_type == "Flood" ~ "Marine",
+    event_type == "High Surf" ~ "Marine",
+    event_type == "Lake-Effect Snow" ~ "Marine",
+    event_type == "Lakeshore Flood" ~ "Marine",
+    event_type == "Marine Hail" ~ "Marine",
+    event_type == "Marine High Wind" ~ "Marine",
+    event_type == "Marine Strong Wind" ~ "Marine",
+    event_type == "Marine Thunderstorm Wind" ~ "Marine",
+    event_type == "Rip Current" ~ "Marine",
+    event_type == "Seiche" ~ "Marine",
+    event_type == "Storm Surge/Tide" ~ "Marine",
+    event_type == "Tsunami" ~ "Marine",
+    event_type == "Waterspout" ~ "Marine",
+    event_type == "Sneakerwave" ~ "Marine",
+    event_type == "Marine Lightning" ~ "Marine",
+    event_type == "Marine Tropical Depression" ~ "Marine",
+    event_type == "Marine Hurricane/Typhoon" ~ "Marine",
+    event_type == "Marine Dense Fog" ~ "Marine",
+    event_type == "Avalanche" ~ "Ice/Snow",
+    event_type == "Blizzard" ~ "Ice/Snow",
+    event_type == "Cold/Wind Chill" ~ "Ice/Snow",
+    event_type == "Extreme Cold/Wind Chill" ~ "Ice/Snow",
+    event_type == "Frost/Freeze" ~ "Ice/Snow",
+    event_type == "Ice Storm" ~ "Ice/Snow",
+    event_type == "Heavy Snow" ~ "Ice/Snow",
+    event_type == "Sleet" ~ "Ice/Snow",
+    event_type == "Winter Storm" ~ "Ice/Snow",
+    event_type == "Winter Weather" ~ "Ice/Snow",
+    event_type == "Dense Fog" ~ "Atmospheric",
+    event_type == "Dense Smoke" ~ "Atmospheric",
+    event_type == "Freezing Fog" ~ "Atmospheric",
+    event_type == "Funnel Cloud" ~ "Atmospheric",
+    event_type == "High Wind" ~ "Atmospheric",
+    event_type == "Lightning" ~ "Atmospheric",
+    event_type == "Strong Wind" ~ "Atmospheric",
+    event_type == "Northern Lights" ~ "Atmospheric",
+    event_type == "Thunderstorm Wind" ~ "Atmospheric",
+    event_type == "Tornado" ~ "Atmospheric",
+    event_type == "Dust Devil" ~ "Atmospheric",
+    event_type == "Dust Storm" ~ "Atmospheric",
+    event_type == "Hurricane (Typhoon)" ~ "Tropical",
+    event_type == "Hurricane" ~ "Tropical",
+    event_type == "Tropical Depression" ~ "Tropical",
+    event_type == "Tropical Storm" ~ "Tropical",
+    event_type == "Heat" ~ "Fire/HiTemps",
+    event_type == "Excessive Heat" ~ "Fire/HiTemps",
+    event_type == "Volcanic Ash" ~ "Fire/HiTemps",
+    event_type == "Volcanic Ashfall" ~ "Fire/HiTemps",
+    event_type == "Drought" ~ "Fire/HiTemps",
+    event_type == "Wildfire" ~ "Fire/HiTemps",
+    TRUE ~ "Rain"
+  ))
+
+
+```
+
+```{r age groups}
+
+median_fatality <- filter(fatalities, fatality_age < 70 & fatality_age > 13)%>%
+  right_join(events, median_fatality)
+
+elderly_fatality <- filter(fatalities, fatality_age >= 70) %>%
+  right_join(events, elderly_fatality)
+
+elderly_fatality <- filter(fatalities, fatality_age >= 70) %>% 
+  elderly_fatality <- right_join(events, elderly_fatality)
+
+```
+
+```{r, echo = FALSE}
+
+# plot of age groups and fatality type
+
+ggplot(na.omit(combine_fatality), aes(x=age_group, fill=weather_cat)) +
+  geom_bar(position = "fill") +
+  scale_fill_brewer(palette = "Dark2") +
+  labs(x= "Age group", y= "Proportion of fatalities for each category", fill= "Weather Categories", title = "Proportion of Each Age Group Affected by Each Weather Category") +
+  theme_bw() # Proportion of each age group affected by different weather categories labelled above
+
+```
+
+We see how each of the age groups is disproportionately affected by each weather category. It's important to understand this data as it is very useful to know who is most vulnerable to weather events. From this analysis we see that the Fire/HiTemps and Tropical category is most popular with the elderly age group and Atmospheric and Marine is the most popular with the young age group.
+
+
+```{r, echo=FALSE}
+
+# Elderly - where is it affected?
+
+# most affected by fire hi temps and tropical unlike the median category
+
+elderly_category <- filter(elderly_fatality, weather_cat == "Fire/HiTemps" | weather_cat == "Tropical") %>%
+ggplot(aes(x=event_type, fill=weather_cat)) +
+  geom_bar() +
+  scale_fill_brewer(palette = "Dark2") +
+  labs(x ="Weather Event", y ="Amount of Fatalities", title="Elderly Fatalities by Most Popular Weather Categories", fill="Weather Category") +
+  theme_bw()+
+  coord_flip() 
+
+# Young - Where is it affected?
+
+young_category <- filter(young_fatality, weather_cat == "Marine" | weather_cat == "Atmospheric") %>%
+ggplot(aes(x=event_type, fill=weather_cat)) +
+  geom_bar() +
+  scale_fill_brewer(palette = "Dark2") +
+  labs(x ="Weather Event", y ="Amount of Fatalities", title="Young Fatalities by Most Popular Weather Categories", fill="Weather Category") +
+  theme_bw()+
+  coord_flip() # young fatality age group plotted with the 2 largest disproportionate causes of fatalities
+
+young_category
+elderly_category
+
+```
+
+From the graphs, we find that the young age group is most affected by floods and tornadoes, whilst the elderly group is most affected by heat and hurricanes.
+
+```{r, echo = FALSE }
+
+# How has weather fatalities changed over time?
+
+combine_facet <- ggplot(na.omit(combine_fatality), aes(x=age_group, fill=weather_cat)) +
+  geom_bar(position = "fill") +
+  scale_fill_brewer(palette = "Dark2") +
+  labs(x= "Age group", y= "Proportion of fatalities for each category over time", fill= "Weather Categories", title = "Proportion of Each Age Group Affected by Each Weather Category") +
+  scale_x_discrete(labels = c(
+    "elderly" = "E",
+    "median" = "M",
+    "young" = "Y"
+  )) +
+  theme_bw() +
+  theme(axis.text.y = element_blank()) +
+  facet_wrap(year(ymd)~.) 
+
+# proportionality of weather categories and fatality over years
+
+combine_facet
+
+```
+
+The graph shows how this proportion has changed over the years, and we can even see in years of extraordinary weather (such as 2005 with hurricane Katrina & 2011 with major tornado outbreaks), weather events still have a large effect on different age groups.  
+
+```{r, echo=FALSE}
+
+# are Fire/HiTemps increasing?
+
+combine_lines <- filter(combine_fatality, weather_cat == "Fire/HiTemps") %>%
+  ggplot(aes(x=year(ymd), colour=event_type)) +
+  geom_line(aes(fill=..count..),stat="bin", binwidth = 1, linewidth = 1) +
+  labs(x="Years",y="Amount of Fatalities",title="Amount of Fire and High Temperature Fatalities Over Time",colour="Event Types") +
+  scale_colour_manual(values=c("midnightblue", "purple2", "mediumorchid2")) +
+  theme_bw() 
+
+# plot looks at the changes of Fire/HiTemps weather_cat over years
+
+combine_lines
+
+```
+
+We also found a slight trend where in the past 20 years the fatalities in the Fire/HiTemps category have been increasing. This could possibly be explained by climate change having an effect on the weather around the US.
+
+
+## References
+
+NOAA Weather service, provided data for the project, accessed at URL: https://www.ncdc.noaa.gov/stormevents/faq.jsp
+NOAA Weather service, data format guide, accessed at URL: https://www.ncei.noaa.gov/pub/data/swdi/stormevents/csvfiles/Storm-Data-Bulk-csv-Format.pdf
 
 
 
