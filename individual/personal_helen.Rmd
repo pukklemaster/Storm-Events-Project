@@ -95,7 +95,7 @@ slope_exploration %>%
                                 'neutral' = 'purple2', 
                                 'la_nina' = 'mediumorchid2'
                                 ),
-    labels = c('El Niño', 'Neutral', 'La Niña')) +
+    labels = c('El Ni\uoof1o', 'Neutral', 'La Niña')) +
   labs(
     x="Date",
     y="Number of Events per Month (log scale)",
