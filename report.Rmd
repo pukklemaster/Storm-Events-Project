@@ -1,6 +1,6 @@
 ---
 title: "Weather in the United States (1996-2023)"
-author: "by Just Commit (Group number: 17): Olivia Harris, Maxwell Pohlmann, Sarah Stewart, Helen Miller, Andrew Morris, & Adam Laycock"
+author: "by Just Commit (Group number: 17): Olivia Harris, Maxwell Pohlman, Sarah Stewart, Helen Miller, Andrew Morris, & Adam Laycock"
 date: "`r Sys.Date()`"
 output: html_document
 editor_options: 
