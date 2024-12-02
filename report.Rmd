@@ -50,12 +50,14 @@ All damage information was converted from a string to a double.
 The cleaning script can be found in it's entirety below.
 
 # Load Data
+
 ```{r load-data, eval=FALSE, echo=TRUE}
 details = read_csv('data/original_data/details_combined.csv')
 fatalities = read_csv('data/original_data/fatalities_combined.csv')
 ```
 
 # Clean Data
+
 ```{r cleaning_script, eval=FALSE, echo=TRUE}
 # Merge and convert formats of begin-date variables
 details <- details %>%
@@ -180,6 +182,7 @@ details <- details %>%
 ```
 
 # Load Cleaned Data
+
 ```{r load_clean_data, echo=TRUE}
 details = read_rds('data/clean_data/details_clean.rds')
 fatalities = read_rds('data/clean_data/fatalities_clean.rds')
@@ -189,13 +192,13 @@ fatalities = read_rds('data/clean_data/fatalities_clean.rds')
 
 To identify how storm events have changed over time we used a linear regression model attempting to predict the number of storm events per year.
 We grouped event frequencies by year to balance statistical significance and trend visibility as smaller groups were skewed by outliers, while larger ones (e.g. 5-year periods) lacked sufficient detail to show trends.
-To do this, we created the variable `events_per_year` by summing event frequencies annually and ran the regression: `lm(event_count ~ year, data = events_per_year)`.
+To do this, we created the object `events_per_year` by summing event frequencies annually and ran the regression: `lm(event_count ~ year, data = events_per_year)`.
 The results predicted for every one-year increase there will be, on average, an additional 774.2 storm events per year.
-These results are statistically significant (p < 0.01, R-squared = 0.536) with over half of the variation in `event_count` explained by the variable `year`.
+These results are statistically significant (p \< 0.01, R-squared = 0.536) with over half of the variation in `event_count` explained by the variable `year`.
 
 We created similar models using fatalities and damages per year.
-These models predict that for every additional year, on average, fatalities will increase by 15.3 individuals and damages will increase by $447 million.
-Both these results have p-values < 0.05 and are statistically significant.
+These models predict that for every additional year, on average, fatalities will increase by 15.3 individuals and damages will increase by \$447 million.
+Both these results have p-values \< 0.05 and are statistically significant.
 However, the R-squared values are low (0.3 for damages and 0.2 for fatalities), indicating there are other factors with a significant influence.
 
 # Regional Exploration
@@ -445,7 +448,9 @@ cost_data %>%
 
 # Event Severity Clustering Using K-means
 
-We were interested in determining if a k-means clustering algorithm could be used to group events. Fatalities and damage were scaled and fed into a k-means model. The optimum number of clusters was determined using an elbow plot and clusters were then visualised.
+We were interested in determining if a k-means clustering algorithm could be used to group events.
+Fatalities and damage were scaled and fed into a k-means model.
+The optimum number of clusters was determined using an elbow plot and clusters were visualised.
 
 ```{r Feature Selection & Engineering}
 # Create combined metrics by combining direct and indirect
@@ -591,13 +596,14 @@ model_table <- model_data_scaled %>%
 kable(model_table)
 ```
 
-Across the assessed time period, the vast majority of storm events fell into the low severity category with a minority in the high damage or high casualty clusters.
+Across the assessed period, the vast majority of storm events fell into the low severity category with a minority in the high damage or high casualty clusters.
 
 # Geospatial Correlation Between Events & Time
 
 ## Building the Function
 
-The function below is used to visualise correlation coefficients between event proportions, for a particular event type, per year and time. Only the statistically significant coefficients for each state are shown.
+The function below is used to visualise correlation coefficients between event proportions, for a particular event type, per year and time.
+Only the statistically significant coefficients for each state are shown.
 
 ```{r Map Correlations Between Number of Events & Time, echo=TRUE}
 # Define function
@@ -749,7 +755,8 @@ As a result, many potential correlations for these events, such as hurricanes or
 
 # Deadly Storm Predictor
 
-We also wanted to assess whether it was possible to predict if a storm would cause fatalities, using only information about the event that could be known beforehand. We used a logistic regression model with the input variables of `begin_dt`, `region`, and `event_type`.
+We also wanted to assess whether it was possible to predict if a storm would cause fatalities, using only information about the event that could be known beforehand.
+We used a logistic regression model with the input variables of `begin_dt`, `region`, and `event_type`.
 
 ```{r}
 # Create new deady variable based on deaths
@@ -937,7 +944,7 @@ storm_pred %>%
         kable()
 ```
 
-Overall, the model metrics appeared to indicate that it fit the problem well, and was able to generalise when encountering new events.
+Overall, the model metrics appeared to indicate that the fit was appropriate and was able to generalise when encountering new events.
 
 # Event Type Averages
 
@@ -1180,7 +1187,9 @@ combined_2022_3 <- fatality_graph_2022_3 + damage_graph_2022_3
 combined_2022_3
 ```
 
-We found that the averages of damages and fatalities decreased from 1996–7 to 2022–3. By creating and joining the year groups, we were able to produce a table showing the percent and absolute change in the overall average of each period. Finally, percent change was calculated for the more damaging/deadly and less damaging/deadly categories.
+We found that the averages of damages and fatalities decreased from 1996–7 to 2022–3.
+By creating and joining the year groups, we were able to produce a table showing the percent and absolute change in the overall average of each period.
+Finally, percent change was calculated for the more damaging/deadly and less damaging/deadly categories.
 
 ```{r}
 # Create year groups
@@ -1363,8 +1372,8 @@ proportions_enso %>%
 
 The visualisation above does allow us to see the impact of ENSO on weather in the United States.
 For example, events such as drought seem to be much more common in La Niña years, as expected in the Eastern Pacific.
-Additionally, the extreme variation common in El Niño years can be seen in the higher proportions of excessive heat and frost/freeze in comparison to other ENSO statuses.
-Interestingly, floods and flash floods are less common in non-neutral ENSO years, possibly indicating a less significant impact on these storm events.
+Additionally, the extreme weather that characterises El Niño years can be seen in the higher proportions of excessive heat and frost/freeze in comparison to other ENSO statuses.
+Interestingly, floods and flash floods are more common in non-neutral ENSO years, possibly indicating a less significant impact on these storm events.
 
 ## Change in ENSO Statuses Over Time
 
@@ -1424,7 +1433,9 @@ slope_exploration %>%
   
 ```
 
-To test if this difference in slope is statistically significant, each linear model was bootstrapped using 1000 samples. The full procedure is below. The results of the bootstrapping procedure including confidence intervals were then plotted.
+To test if this difference in slope is statistically significant, each linear model was bootstrapped using 1000 samples.
+The full procedure is below.
+The results of the bootstrapping procedure including confidence intervals were then plotted.
 No significant difference is apparent due to the overlap in confidence intervals, though this could be due to sample size.
 
 ```{r echo=TRUE}
@@ -1527,15 +1538,6 @@ combined_slopes %>%
   theme(legend.position = 'none')
 ```
 
-## Citations
-
-Ocean Surface Topography from Space.
-(2024).
-*El Niño 2023 \| El Niño/La Niña Watch & PDO*.
-[online] Available at: <https://sealevel.jpl.nasa.gov/data/el-nino-la-nina-watch-and-pdo/el-nino-2023/.>
-
-FORMAT THIS: <https://psl.noaa.gov/enso/past_events.html>
-
 # Fatalities and Storm Events
 
 ```{r Who is most affected by weather}
@@ -1547,7 +1549,8 @@ fatalities %>%
 ```
 
 Regarding the `fatalities` dataset, we were interested in groups that appeared to be underrepresented.
-We chose those aged 0-13 and 70+ as the groups of interest. To simplify the analysis, we separated our weather events into more general categories.
+We chose those aged 0-13 and 70+ as the groups of interest.
+To simplify the analysis, we separated our weather events into more general categories.
 
 ```{r seperate weather events}
 events <- details %>% select(event_id, event_type)
@@ -1661,8 +1664,7 @@ ggplot(na.omit(combine_fatality), aes(x=age_group, fill=weather_cat)) +
   theme_bw() # Proportion of each age group affected by different weather categories labelled above
 ```
 
-This allows us to see how different age groups are disproportionately affected by different types of weather.
-This is quite significant, as it gives us a better understanding of who is most vulnerable to storm events.
+This allows us to see how different age groups are disproportionately affected by different types of weather, giving us a better understanding of who is most vulnerable to storm events.
 For example, we can see that both `Fire/HiTemps` and `Tropical` events are most dangerous for the elderly group, while `Atmospheric` and `Marine` events are most dangerous for younger individuals.
 
 ```{r}
@@ -1737,5 +1739,20 @@ We also found that, over the past 20 years, the fatalities resulting from `Fire/
 This could possibly be the result of climate change impacting weather in the United States.
 
 ## References
+
+Anderson, E.C.
+(n.d.).
+*Making Maps With R · Reproducible Research.* [online] eriqande.github.io.
+Available at: <https://eriqande.github.io/rep-res-web/lectures/making-maps-with-R.html> [Accessed Nov. 2024].
+
+NASA Jet Propulsion Lab-- California Institute of Technology (2024).
+*El Niño 2023 \| El Niño/La Niña Watch & PDO*.
+[online] Ocean Surface Topography from Space.
+Available at: <https://sealevel.jpl.nasa.gov/data/el-nino-la-nina-watch-and-pdo/el-nino-2023/> [Accessed Nov. 2024].
+
+National Oceanic and Atmospheric Administration (2023).
+*Past Events*.
+[online] Noaa.gov.
+Available at: <https://psl.noaa.gov/enso/past_events.html> [Accessed Nov. 2024].
 
 NOAA Weather service, provided data for the project, accessed at URL: <https://www.ncdc.noaa.gov/stormevents/faq.jsp> NOAA Weather service, data format guide, accessed at URL: <https://www.ncei.noaa.gov/pub/data/swdi/stormevents/csvfiles/Storm-Data-Bulk-csv-Format.pdf>
