@@ -30,14 +30,14 @@ library(patchwork)
 xaringanExtra::use_panelset()
 ```
 
-## Research Question
+# Research Question
 
 How have storm events changed over time, and what are the personal and monetary effects of these changes?
 
 We chose to investigate this question due to the increasingly dramatic shifts in climate observed in recent years.
 Many of these changes seem to be significantly impacting the United States, and we wanted to explore those impacts in our data.
 
-## Data
+# Data
 
 Our data was sourced from the Storm Events Database of the National Oceanic and Atmospheric Administration (NOAA).
 Individual .csv files were downloaded and compiled using the script found in `data/compile_script`.
@@ -179,13 +179,13 @@ details <- details %>%
 #write_rds(fatalities, "data/clean_data/fatalities_clean.rds")
 ```
 
-# Read Cleaned Data
+# Load Cleaned Data
 ```{r load_clean_data, echo=TRUE}
 details = read_rds('data/clean_data/details_clean.rds')
 fatalities = read_rds('data/clean_data/fatalities_clean.rds')
 ```
 
-## Changes in Storm Event Frequency Over Time
+# Changes in Storm Event Frequency Over Time
 
 To identify how storm events have changed over time we used a linear regression model attempting to predict the number of storm events per year.
 We grouped event frequencies by year to balance statistical significance and trend visibility as smaller groups were skewed by outliers, while larger ones (e.g. 5-year periods) lacked sufficient detail to show trends.
@@ -197,6 +197,8 @@ We created similar models using fatalities and damages per year.
 These models predict that for every additional year, on average, fatalities will increase by 15.3 individuals and damages will increase by $447 million.
 Both these results have p-values < 0.05 and are statistically significant.
 However, the R-squared values are low (0.3 for damages and 0.2 for fatalities), indicating there are other factors with a significant influence.
+
+# Regional Exploration
 
 ```{r filter events}
 severe_details <- details %>%
@@ -1660,7 +1662,7 @@ ggplot(na.omit(combine_fatality), aes(x=age_group, fill=weather_cat)) +
 ```
 
 This allows us to see how different age groups are disproportionately affected by different types of weather.
-This is quite significant, as it gives us a better understanding of who is most vunerable to storm events.
+This is quite significant, as it gives us a better understanding of who is most vulnerable to storm events.
 For example, we can see that both `Fire/HiTemps` and `Tropical` events are most dangerous for the elderly group, while `Atmospheric` and `Marine` events are most dangerous for younger individuals.
 
 ```{r}
