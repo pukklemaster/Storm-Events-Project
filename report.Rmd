@@ -15,151 +15,24 @@ knitr::opts_chunk$set(echo = FALSE)
 ```{r load-lib}
 library(tidyverse)
 library(tidymodels)
-library(janitor) #converts variable names to snake_case
-library(tidyverse)
 library(janitor)
 library(workflows)
 library(parsnip)
 library(tidyclust)
-library(tidymodels)
 library(usmap)
 library(gghighlight)
 library(knitr)
 library(xaringanExtra)
 library(doParallel)
-xaringanExtra::use_panelset()
-library(tidyverse)
-library(tidymodels)
-library(janitor)
 library(broom)
 library(patchwork)
+
+xaringanExtra::use_panelset()
 ```
 
 ```{r load-data}
 details = read_csv('data/original_data/details_combined.csv')
 fatalities = read_csv('data/original_data/fatalities_combined.csv')
-```
-
-```{r Data Cleaning}
-# Merge and convert formats of begin-date variables
-details <- details %>%
-  # Combine date elements
-  unite("BEGIN_DATE", BEGIN_YEARMONTH, BEGIN_DAY, sep = "") %>% 
-  mutate(
-    # Convert date to a character for union with time
-    BEGIN_DATE = as.character(BEGIN_DATE),
-    # Add leading zero if the time is 3 digits
-    BEGIN_TIME = case_when(
-      BEGIN_TIME < 1000 ~ sprintf("%04d", BEGIN_TIME),
-      TRUE ~ as.character(BEGIN_TIME)
-    )
-  ) %>%
-  # Unite date and time into one string
-  unite("BEGIN_DT", BEGIN_DATE, BEGIN_TIME, sep = " ") %>%
-  mutate(
-    # Convert to a datetime
-    BEGIN_DT = ymd_hm(BEGIN_DT)
-  )
-
-# Merge and convert formats of end-date variables
-details <- details %>%
-  # Combine date elements
-  unite("END_DATE", END_YEARMONTH, END_DAY, sep = "") %>% 
-  mutate(
-    # Convert date to a character for union with time
-    END_DATE = as.character(END_DATE),
-    # Add leading zero if the time is 3 digits
-    END_TIME = case_when(
-      END_TIME < 1000 ~ sprintf("%04d", END_TIME),
-      TRUE ~ as.character(END_TIME)
-    )
-  ) %>%
-  # Unite date and time into one string
-  unite("END_DT", END_DATE, END_TIME, sep = " ") %>%
-  mutate(
-    # Convert to a datetime
-    END_DT = ymd_hm(END_DT)
-  )
-
-# Remove unnecessary columns
-details <- details %>%
-  select(
-    -c(YEAR, MONTH_NAME, BEGIN_DATE_TIME, END_DATE_TIME, 
-       EVENT_NARRATIVE, EPISODE_NARRATIVE
-    )
-  )
-
-# Rename incorrect column names
-details <- details %>%
-  rename(
-    REGION = STATE,
-    REGION_FIPS = STATE_FIPS
-  )
-
-# Create duration variable 
-details <- details %>% 
-  mutate(
-    duration = END_DT - BEGIN_DT
-  ) %>% 
-    mutate(
-      duration = as.numeric(duration) / 60
-    )
-
-# Change cost suffixes
-details <- details %>% 
-  mutate(
-    DAMAGE_PROPERTY = as.numeric(gsub("K", "e+03", gsub("M", "e+06", DAMAGE_PROPERTY))),
-    DAMAGE_CROPS = as.numeric(gsub("K", "e+03", gsub("M", "e+06", DAMAGE_CROPS)))
-  )
-
-# Create a total damage column using crops and property
-details <- details %>%
-  mutate(
-    DAMAGE_TOTAL = DAMAGE_PROPERTY + DAMAGE_CROPS
-  )
-
-# Remove all records pertaining to an incomplete year
-details <- details %>% 
-  filter(
-    !year(BEGIN_DT) == '2024'
-  )
-
-# Use janitor to convert variable names to snakecase
-details <- details %>% 
-  clean_names()
-
-# Tidy the fatalities DataFrame
-fatalities <- fatalities %>% 
-  select(
-    -FAT_TIME, -FATALITY_DATE, -EVENT_YEARMONTH
-  ) %>% 
-    mutate(
-      YMD = ymd(paste(FAT_YEARMONTH, FAT_DAY))
-    ) %>% 
-      select(
-        -FAT_DAY, -FAT_YEARMONTH
-      )
-
-# Remove 2024 records
-fatalities <- fatalities %>%
-  filter(
-    !year(YMD) == '2024'
-  )
-
-# Use janitor to convert variables to snakecase
-fatalities <- fatalities %>% 
-  clean_names()
-
-details <- details %>%
-  mutate(
-    event_type = recode(
-      event_type,
-      "Hurricane (Typhoon)" = "Hurricane"
-    )
-  )
-
-#write_rds(details, "data/clean_data/details_clean.rds", compress = "gz")
-#write_rds(fatalities, "data/clean_data/fatalities_clean.rds")
 ```
 
 ## Research Question
@@ -299,39 +172,27 @@ details <- details %>%
   )
 
 #save cleaned data
-#write_rds(details, "../clean_data/details_clean.rds", compress = "gz")
-#write_rds(fatalities, "../clean_data/fatalities_clean.rds")
+#write_rds(details, "data/clean_data/details_clean.rds", compress = "gz")
+#write_rds(fatalities, "data/clean_data/fatalities_clean.rds")
 ```
 
-
-
-
-
-```{r load-data}
-details = read_rds('../../data/clean_data/details_clean.rds')
-fatalities = read_rds('../../data/clean_data/fatalities_clean.rds')
+```{r load_clean_data}
+details = read_rds('data/clean_data/details_clean.rds')
+fatalities = read_rds('data/clean_data/fatalities_clean.rds')
 ```
-
-
 
 ## Changes in Storm Event Frequency Over Time
 
 To identify how storm events have changed over time we used a linear regression model attempting to predict the number of storm events per year.
-We grouped event frequencies by year to balance statistical significance and trend visibility as smaller groups were skewed by outliers, while larger ones (e.g., 5-year periods) lacked sufficient detail to show trends over time.
-To do this, we created the variable events_per_year by summing event frequencies annually and ran the regression: lm(event_count ~ year, data = events_per_year).
+We grouped event frequencies by year to balance statistical significance and trend visibility as smaller groups were skewed by outliers, while larger ones (e.g. 5-year periods) lacked sufficient detail to show trends.
+To do this, we created the variable *events_per_year* by summing event frequencies annually and ran the regression: `lm(event_count ~ year, data = events_per_year)`.
 The results predicted for every one-year increase there will be, on average, an additional 774.2 storm events per year.
-These results are statistically significant (p > 0.01, R-squared = 0.5358) with over half of the variation in event count per year explained by the variable year.
+These results are statistically significant (p \< 0.01, R-squared = 0.536) with over half of the variation in `event_count` explained by the variable `year`.
 
-We created similar models predicting fatalities and damages per year.
-These models predict that for every additional year, on average, fatalities will increase by 15.3 and damages will increase by $447 million.
-Both these results have p-values < 0.05 and are statistically significant.
-However, the R-squared values are low (0.3 for damages and 0.2 for fatalities), indicating there are other factors with a significant influence.
-
-
-
-
-
-
+We created similar models using fatalities and damages per year.
+These models predict that for every additional year, on average, fatalities will increase by 15.3 individuals and damages will increase by \$447 million.
+Both these results have p-values \< 0.05 and are statistically significant.
+However, the R-squared values are low (0.3 for damages and 0.2 for fatalities), indicating there are other factors with a significant influence.
 
 ```{r filter events}
 severe_details <- details %>%
@@ -361,13 +222,14 @@ not_severe_details <- details %>%
 combined_data <- severe_details %>%
   full_join(fatalities, by = "event_id")
 ```
- 
+
 ```{r not combined}
 not_combined_data <- not_severe_details %>%
   full_join(fatalities, by = "event_id")
 ```
 
-When analyzing the total number of weather events, we found Texas experienced significantly more weather events than any other state. This could potentially be explained by its considerably large size. 
+In visualising the total number of weather events, we found that Texas experienced considerably more weather events than any other state.
+This could potentially be explained by its considerable size.
 
 ```{r not severe frequency events}
 not_frequency_by_region <-not_combined_data%>%
@@ -388,7 +250,7 @@ not_combined_data <- not_combined_data %>%
   left_join(not_frequency_by_region, by="region")
  
 ```
- 
+
 ```{r not severe event frequency map}
 not_combined_data <- not_combined_data %>% 
   mutate(region = tolower(region))
@@ -415,7 +277,8 @@ map_combined %>%
   theme_minimal()
 ```
 
-With the filtered data, analyzed which states experienced severe weather events and how often. From this we found Florida, Texas and California endured the highest frequency of severe weather events. 
+When comparing this data to the total number of fatalities caused by all weather events, we found that, as predicted, Florida, California, and Texas all experienced a high fatality rate.
+However, Arizona showed an unexpectedly high number of fatalities, though it did not experience as many severe weather events.
 
 ```{r  frequency events}
 frequency_by_region <-combined_data%>%
@@ -436,7 +299,7 @@ combined_data <- combined_data %>%
   left_join(frequency_by_region, by="region")
  
 ```
- 
+
 ```{r event frequency map}
  
 combined_data <- combined_data %>% 
@@ -464,8 +327,6 @@ map_combined %>%
     subtitle = "Most severe weather events experienced per state") +
   theme_minimal()
 ```
-
-When comparing this data to the total number of fatalities caused by all weather events, we found that, as predicted, Florida, California, and Texas all experienced a high fatality rate. However, unexpectedly Arizona showed a high number of fatalities, even though they did not experience a lot of severe weather. 
 
 ```{r not fatalities  map}
  
@@ -495,7 +356,10 @@ map_combined %>%
   theme_minimal()
 ```
 
-Finally, we compared the results found to the total damages caused by severe weather events and much of what we discovered was to be expected, with Florida, Texas, California and Arizona all having experienced a high degree of total damages caused by severe weather events. However, many states experienced similar high damage costs while experiencing drastically less frequent severe weather events. From this we concluded that it could potentially stem from the lack of sufficient infrastructure in place to prepare for storm events, especially compared to states experiencing severe weather events frequently. 
+Finally, we compared these results to the total damages caused by severe weather events.
+Florida, Texas, California, and Arizona all experienced a high amount of total damage.
+However, many states faced similarly high costs while experiencing drastically fewer severe events.
+We concluded that these states potentially lack sufficient infrastructure to prepare for storm events, especially compared to states which experience these events frequently.
 
 ```{r map damage}
  
@@ -521,16 +385,10 @@ map_combined %>%
   theme_minimal()
 ```
 
-
-
-
-
-
-
-
-
-
 # Damage Makeup by Event Type
+
+When exploring damages by event type, we found that not all highly damaging events caused the same type of damage.
+Flash floods and tornadoes predominantly caused damage to property, while droughts and freezes disproportionately affected crops.
 
 ```{r fig.align='center'}
 cost_data <- details %>% 
@@ -583,11 +441,13 @@ cost_data %>%
     aspect.ratio=4/4
   )
 ```
-This plot shows that not all highly damaging events caused the same types of damages. Flash floods and tornadoes predominantly caused damage to property, while droughts and freezes disproportionately affected crops.
 
 # Event Severity Clustering Using K-means
+
 ## Preprocessing & Optimisation
+
 ### Feature Selection & Engineering
+
 ```{r Feature Selection & Engineering}
 # Create combined metrics by combining direct and indirect
 details <- details %>% 
@@ -615,6 +475,7 @@ model_data_scaled <- model_data %>%
 ```
 
 ### K Hyperparameter Optimisation
+
 ```{r Cluster number optimisation, fig.align='center', eval=FALSE}
 # Initialise empty lists
 k_list = list()
@@ -659,6 +520,7 @@ elbow_data %>%
 ```
 
 ## Fitting the Optimised Model
+
 ```{r Optimised Model}
 # Create a model object using the optimum number of clusters
 kmeans_spec <- k_means(num_clusters = 3)
@@ -688,7 +550,9 @@ model_data_scaled <- model_data_scaled %>%
 ```
 
 ## Visualising Clustering Results
+
 ### Scatterplot using Clusters
+
 ```{r Scatter Plot of Scaled Data by Cluster, fig.align='center'}
 # Create a scatterplot of the features, hued by cluster
 model_data_scaled %>%
@@ -711,6 +575,7 @@ model_data_scaled %>%
 ```
 
 ### Tabular Clusters
+
 ```{r Cluster Frequency Table, fig.align='center'}
 # Create a table for the number of events in each cluster
 model_table <- model_data_scaled %>% 
@@ -731,10 +596,12 @@ model_table <- model_data_scaled %>%
 kable(model_table)
 ```
 
-Across the assessed time period, the vast majority of storm events fell into the low severity category with only a relative handful being found in the extremes of high damage or high casualties.
+Across the assessed time period, the vast majority of storm events fell into the low severity category with a minority in the high damage or high casualty clusters.
 
 # Geospatial Correlation Between Events & Time
+
 ## Building the Function
+
 ```{r Map Correlations Between Number of Events & Time}
 # Define function
 map_correlations <- function(event_type) {
@@ -878,12 +745,17 @@ map_correlations('Drought')
 map_correlations('Hurricane')
 ```
 
-##
-These plots highlight a key limitation with this script, rarer events are much harder to track and predict through time. As a result, lots of the potential correlations for rarer events, such as hurricanes or droughts, are not shown due to the statistical insignificance owing to a smaller sample size.
+## 
+
+These plots highlight a key limitation with this script: rarer events are much harder to track and predict through time.
+As a result, many potential correlations for rarer events, such as hurricanes or droughts, cannot be shown due to statistical insignificance owing to a smaller sample size.
 
 # Deadly Storm Predictor
+
 ## Preprocessing
+
 ### Response & Sampling
+
 ```{r}
 # Create new deady variable based on deaths
 details <- details %>% 
@@ -908,6 +780,7 @@ model_data <- model_data %>%
 ```
 
 ### Train, Test Split
+
 ```{r}
 # Set seed and split data
 set.seed(1)
@@ -917,6 +790,7 @@ storm_test  <- testing(storm_split)
 ```
 
 ### Building the Recipe, Model, & Workflow
+
 ```{r}
 # Build preprocessing recipe
 storm_rec_1 <- recipe(
@@ -937,7 +811,9 @@ storm_wflow_1 <- workflow() %>%
 ```
 
 ## Training the Model
+
 ### Fitting the Model Using Parallel Processing
+
 ```{r message=FALSE, warning=FALSE}
 # Use parallel processing to speed up fit
 registerDoParallel(cores = detectCores() - 1)
@@ -947,6 +823,7 @@ storm_fit_1 <- fit(storm_wflow_1, data = storm_train)
 ```
 
 ### Extracting Prediction Probabilities
+
 ```{r message=FALSE, warning=FALSE}
 # Create prediction probabilities and bind to test data
 storm_pred <- predict(
@@ -960,7 +837,9 @@ storm_pred <- predict(
 ```
 
 ## Analysing Model Fit
+
 ### ROC Curve & AUC Value
+
 ```{r fig.align='center'}
 # Convert response variable to a factor
 storm_pred <- storm_pred %>% 
@@ -997,6 +876,7 @@ storm_pred %>%
 ```
 
 ### Building a Confusion Matrix
+
 ```{r message=FALSE, warning=FALSE, fig.align='center'}
 # Use probability cutoff to calculate model prediction
 storm_pred <- storm_pred %>% 
@@ -1055,6 +935,7 @@ confusion %>%
 ```
 
 ### Accuracy
+
 ```{r}
 # Calculate an accuracy metric
 storm_pred %>% 
@@ -1077,20 +958,11 @@ storm_pred %>%
         kable()
 ```
 
+# Event Type Averages and Data Limitations
 
+We split event types into two categories: more damaging/deadly and less damaging/deadly (relative to the mean).
+This was used to assess whether increased damages and fatalities over time were reflected equally in both severe and less severe storm events.
 
-
-
-
-
-
-
- 
- 
-# Event Type Averages and Data Limitations 
- 
-We split event types into two categories: more/less damaging/deadly (compared to the mean). This was used to assess whether increased damages and fatalities over time were reflected equally in both severe and less severe storm events. 
- 
 ```{r chunk_1}
 # Rename redundant event type names
   details <- details %>%
@@ -1132,8 +1004,9 @@ details_grouped <- details_grouped %>%
                            "More Damaging", "Less Damaging")
   )
 ```
-We used mean impact for the analysis of changes in fatalities and damages due to the possibility of stronger storms overall or greater storm frequency over time. 
- 
+
+We used mean impact for the analysis of changes in fatalities and damages due to the possibility of stronger storms overall or greater storm frequency over time.
+
 ```{r chunk_2}
 # Adjusted Graph for Fatalities (All Data)
 fatality_graph <- details_grouped %>%
@@ -1187,8 +1060,9 @@ combined_original <- fatality_graph + damage_graph
 # Display plots
 combined_original
 ```
- 
-We repeated this process for 1996–7 and 2022–3, using two-year periods to minimise the impact of outliers. 
+
+This process was repeated for 1996–7 and 2022–3, using two-year periods to minimise the impact of outliers.
+
 ```{r chunk_3 / table_1}
 # Filter for 1996
 details_1996_7 <- details_selected %>% filter(year %in% c(1996, 1997))
@@ -1217,8 +1091,9 @@ details_grouped_1996_7 <- details_grouped_1996_7 %>%
                            "More Damaging", "Less Damaging")
   )
 ```
- 
+
 ### Labeled graph for the 1996-7 period:
+
 ```{r chunk_4, echo=FALSE}
 # Adjusted Graph for 1996 Fatalities
 fatality_graph_1996_7 <- details_grouped_1996_7 %>%
@@ -1258,8 +1133,9 @@ combined_1996_7 <- fatality_graph_1996_7 + damage_graph_1996_7
 # Display plots
 combined_1996_7
 ```
- 
+
 ### Labeled graph for the 2022-3 period:
+
 ```{r chunk_5, echo=FALSE}
 # Filter for 2022-3
 details_2022_3 <- details_selected %>% filter(year %in% c(2022, 2023))
@@ -1326,8 +1202,11 @@ combined_2022_3 <- fatality_graph_2022_3 + damage_graph_2022_3
 # Display plots
 combined_2022_3
 ```
-Below are the tibbles showing event types, classifications, and impact averages for the entire dataset, 1996–7, and 2022–3. This allows us to view the changes and cla
-``` {r chunk_6, echo=FALSE}
+
+Below are the tibbles showing event types, classifications, and impact averages for the entire dataset, 1996–7, and 2022–3.
+This allows us to view the changes and classifications in context.
+
+```{r chunk_6, echo=FALSE}
 # Exact values for the original chart
 details_grouped %>%
   select(event_type, fatality_group, damage_group, avg_fatalities_by_type, avg_damage_by_type) %>%
@@ -1343,10 +1222,15 @@ details_grouped_2022_3 %>%
   select(event_type, fatality_group, damage_group, avg_fatalities_by_type, avg_damage_by_type) %>%
   arrange(fatality_group, damage_group)
 ```
+
 ## Changes
-All averaged values decreased from 1996–7 to 2022–3. 
-First, by creating and joining the year groups, we produced a tibble showing the percent and absolute change for each event type. Next, we calculated percent and absolute changes for the global averages of each period. Finally, we generated a simple percent change for each more/less category. 
-``` {r chunk_7}
+
+We found that the averages of damages and fatalities decreased from 1996–7 to 2022–3.
+By creating and joining the year groups, we were able to produce a table showing the percent and absolute change for each event type.
+This was repeated for the overall averages of each period.
+Finally, percent change was calculated for the more damaging/deadly and less damaging/deadly categories.
+
+```{r chunk_7}
 # Create year groups
 details_grouped_1996_7 <- details_grouped_1996_7 %>%
   mutate(year_group = "1996-1997")
@@ -1399,25 +1283,20 @@ Percent_change_more_fatalities
 Percent_change_less_damages
 Percent_change_more_damages
 ```
- 
+
 # Findings
-While total damages and fatalities rose, average impact per event declined. This suggests that increased storm frequency has affected people and property more than storm strength.  
-However, a limitation of this dataset is the inability to fully assess storm severity without accounting for infrastructure strength, which was unavailable. 
 
-
-
-
-
-
-
-
-
-
-
+While total damage and fatalities increased, the average impact per event declined.
+This suggests that increased storm frequency has had a larger impact on people and property than storm strength. 
+However, we should note that this dataset had no variable representing infrastructure strength, which could confound our results.
 
 ## Event Proportions and ENSO Status
 
-To simplify the investigation of the impact of El Niño Southern Oscillation (ENSO) on our data, irrelevant variables were removed from the `details_clean` data set (Chunk 1). Then, using data from NOAA and NASA, a column displaying the ENSO status of each year was added and the resulting data frame was saved as `details_enso` (Chunk 2). Finally, a table of expected and observed events grouped by ENSO status was produced for initial analysis (Chunk 3). `exp_prop` acts as a null hypothesis-- assuming ENSO status has no impact on event frequency.The resulting table shows that the observed frequency is relatively similar to expected, meaning we fail to reject the null hypothesis.
+We were also interested in if the impact of El Niño Southern Oscillation (ENSO) was visible in our data.
+To simplify this investigation, irrelevant variables were removed from the `details_clean` data set.
+Then, using data from NOAA and NASA, a column displaying the ENSO status of each year was added and the resulting data frame was saved as `details_enso`.
+Finally, a table of expected and observed events grouped by ENSO status was produced for initial analysis.
+`exp_prop` acts as a null hypothesis-- assuming ENSO status has no impact on event frequency.
 
 ```{r chunk_1}
 #remove irrelevant variables for ENSO analysis
@@ -1467,8 +1346,13 @@ details_enso %>%
   )
 ```
 
+The resulting table shows that the observed frequency is relatively similar to expected, meaning we fail to reject the null hypothesis.
+
 ## Event Types and ENSO Status
-Though event frequency does not appear significantly impacted by ENSO, we were also interested in if the proportion of event types varies by ENSO status. This was explored by calculating event type proportions across all years of a common ENSO status (Chunk 4). Event types with the largest difference in proportion between El Niño and La Niña years were visualised (Chunk 5).
+
+Though event frequency does not appear significantly impacted by ENSO, we were also interested in if the proportion of event types varies by ENSO status.
+This was explored by calculating event type proportions across all years of a common ENSO status.
+Event types with the largest difference in proportion between El Niño and La Niña years were visualised.
 
 ```{r chunk_4}
 #calculate proportion in El Niño years
@@ -1528,9 +1412,15 @@ proportions_enso %>%
   )
 ```
 
+The visualisation above does allow us to see the impact of ENSO on weather in the United States.
+For example, events such as drought seem to be much more common in La Niña years, as expected in the Eastern Pacific.
+Additionally, the extreme variation common in El Niño years can be seen in the higher proportions of excessive heat and frost/freeze in comparison to other ENSO statuses.
+Interestingly, floods and flash floods are less common in non-neutral ENSO years, possibly indicating a less significant impact on these storm events.
+
 ## Change in ENSO Statuses Over Time
 
-As a part of initial analysis, we noted a change in the slopes of event count grouped by ENSO status (Chunk 6). Events in La Niña years appear to be  increasing in monthly frequency at a slightly greater rate than those of a different ENSO status (Chunk 7).
+As a part of initial analysis, we noted a change in the slopes of event count grouped by ENSO status, as seen in the figures below.
+Events in La Niña years appear to be increasing in monthly frequency at a slightly greater rate than those of a different ENSO status.
 
 ```{r chunk_6}
 slope_exploration <- details_enso %>%
@@ -1585,7 +1475,9 @@ slope_exploration %>%
   
 ```
 
-To test if this difference in slope is statistically significant, each linear model was bootstrapped (Chunk 8). The results of the bootstrapping procedure are displayed in the output of Chunk 9. No significant difference is apparent due to the overlap in confidence intervals, though this could be due to sample size.
+To test if this difference in slope is statistically significant, each linear model was bootstrapped using 1000 samples.
+The results of the bootstrapping procedure including confidence intervals were then plotted.
+No significant difference is apparent due to the overlap in confidence intervals, though this could be due to sample size.
 
 ```{r chunk_8}
 #calculate number of events per month for each ENSO status
@@ -1688,25 +1580,18 @@ combined_slopes %>%
   theme(legend.position = 'none')
 ```
 
-# Citations 
+# Citations
 
-Ocean Surface Topography from Space. (2024). *El Niño 2023 \| El Niño/La Niña Watch & PDO*. [online] Available at: <https://sealevel.jpl.nasa.gov/data/el-nino-la-nina-watch-and-pdo/el-nino-2023/.>
+Ocean Surface Topography from Space.
+(2024).
+*El Niño 2023 \| El Niño/La Niña Watch & PDO*.
+[online] Available at: <https://sealevel.jpl.nasa.gov/data/el-nino-la-nina-watch-and-pdo/el-nino-2023/.>
 
 FORMAT THIS: <https://psl.noaa.gov/enso/past_events.html>
 
-
-
-
-
-
-
-
-
-
-
-
-
-When we analysed fatalities in the data, we wanted to look at underrepresented age groups in fatalities. We chose those between 0 and 13 years old and those who are 70 and over to be our groups of interest. We separated our weather events into weather categories to interpret the types of weather that affect each age group the most.
+When we analysed fatalities in the data, we wanted to look at underrepresented age groups in fatalities.
+We chose those between 0 and 13 years old and those who are 70 and over to be our groups of interest.
+We separated our weather events into weather categories to interpret the types of weather that affect each age group the most.
 
 ```{r seperate weather events, echo=FALSE}
 
@@ -1807,8 +1692,9 @@ ggplot(na.omit(combine_fatality), aes(x=age_group, fill=weather_cat)) +
 
 ```
 
-We see how each of the age groups is disproportionately affected by each weather category. It's important to understand this data as it is very useful to know who is most vulnerable to weather events. From this analysis we see that the Fire/HiTemps and Tropical category is most popular with the elderly age group and Atmospheric and Marine is the most popular with the young age group.
-
+We see how each of the age groups is disproportionately affected by each weather category.
+It's important to understand this data as it is very useful to know who is most vulnerable to weather events.
+From this analysis we see that the Fire/HiTemps and Tropical category is most popular with the elderly age group and Atmospheric and Marine is the most popular with the young age group.
 
 ```{r, echo=FALSE}
 
@@ -1864,7 +1750,7 @@ combine_facet
 
 ```
 
-The graph shows how this proportion has changed over the years, and we can even see in years of extraordinary weather (such as 2005 with hurricane Katrina & 2011 with major tornado outbreaks), weather events still have a large effect on different age groups.  
+The graph shows how this proportion has changed over the years, and we can even see in years of extraordinary weather (such as 2005 with hurricane Katrina & 2011 with major tornado outbreaks), weather events still have a large effect on different age groups.
 
 ```{r, echo=FALSE}
 
@@ -1883,36 +1769,12 @@ combine_lines
 
 ```
 
-We also found a slight trend where in the past 20 years the fatalities in the Fire/HiTemps category have been increasing. This could possibly be explained by climate change having an effect on the weather around the US.
-
+We also found a slight trend where in the past 20 years the fatalities in the Fire/HiTemps category have been increasing.
+This could possibly be explained by climate change having an effect on the weather around the US.
 
 ## References
 
-NOAA Weather service, provided data for the project, accessed at URL: https://www.ncdc.noaa.gov/stormevents/faq.jsp
-NOAA Weather service, data format guide, accessed at URL: https://www.ncei.noaa.gov/pub/data/swdi/stormevents/csvfiles/Storm-Data-Bulk-csv-Format.pdf
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+NOAA Weather service, provided data for the project, accessed at URL: <https://www.ncdc.noaa.gov/stormevents/faq.jsp> NOAA Weather service, data format guide, accessed at URL: <https://www.ncei.noaa.gov/pub/data/swdi/stormevents/csvfiles/Storm-Data-Bulk-csv-Format.pdf>
 
 The write-up of your project and findings go here.
 
@@ -1936,11 +1798,11 @@ Make sure to hide your code with `echo = FALSE` unless the point you are trying 
 
 ## Impact of Storm Events
 
-We also chose to explore the impact of weather events across the United States. Initially, unessesary variables were removed from `details_clean.rds`.Then, the data was filtered to find the most severe weather events using `damage_total`, and stored in either `severe_details` and `not_severe_details`, with the latter containing all other weather events. This was then joined to `fatalities_clean.rds`.
-
+We also chose to explore the impact of weather events across the United States.
+Initially, unessesary variables were removed from `details_clean.rds`.Then, the data was filtered to find the most severe weather events using `damage_total`, and stored in either `severe_details` and `not_severe_details`, with the latter containing all other weather events.
+This was then joined to `fatalities_clean.rds`.
 
 Considering the total number of weather events, we found Texas experienced significantly more weather events than any other state.This could potentially be explained by its considerable size.
-
 
 ## References
 
