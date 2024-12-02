@@ -9,7 +9,7 @@ editor_options:
 ---
 
 ```{r setup, include = FALSE}
-knitr::opts_chunk$set(echo = TRUE, warning = FALSE, message = FALSE, fig.align = 'center')
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, fig.align = 'center')
 ```
 
 ```{r load-lib, echo=TRUE, message=FALSE, warning=FALSE}
@@ -1470,12 +1470,12 @@ bootstrapping <- function(df, floor_name){
 }
 
 #display bootstrapped slopes in a tibble
-bootstrapping(by_month_en, 'en_floor_date') %>% 
-  kable()
-bootstrapping(by_month_ln, 'ln_floor_date') %>% 
-  kable()
-bootstrapping(by_month_n, 'n_floor_date') %>% 
-  kable()
+el_nino_slope <- bootstrapping(by_month_en, 'en_floor_date')
+el_nino_slope %>% kable()
+la_nina_slope <- bootstrapping(by_month_ln, 'ln_floor_date')
+la_nina_slope %>% kable()
+neutral_slope <- bootstrapping(by_month_n, 'n_floor_date')
+neutral_slope %>% kable()
 ```
 
 ```{r}
