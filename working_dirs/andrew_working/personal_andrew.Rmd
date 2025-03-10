@@ -15,8 +15,8 @@ library(janitor)
 ```
 
 ```{r load-data}
-details = read_rds('../data/clean_data/details_clean.rds')
-fatalities = read_rds('../data/clean_data/fatalities_clean.rds')
+details = read_rds('../../data/clean_data/details_clean.rds')
+fatalities = read_rds('../../data/clean_data/fatalities_clean.rds')
 ```
 
 ```{r Who is most affected by weather}
@@ -106,7 +106,6 @@ events <-events %>%
 
 ```
 
-
 ```{r median age group}
 
 median_fatality <- filter(fatalities, fatality_age < 70 & fatality_age > 13)
@@ -121,7 +120,6 @@ right_join(events, median_fatality) %>%
 
 
 ```
-
 
 ```{r old age group}
 
@@ -164,7 +162,6 @@ young_fatality %>%
 # ---
 
 ```
-
 
 ```{r}
 

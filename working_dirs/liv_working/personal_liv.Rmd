@@ -18,8 +18,8 @@ library(dplyr)
 ```
 
 ```{r load-data}
-details = read_rds('../data/clean_data/details_clean.rds')
-fatalities = read_rds('../data/clean_data/fatalities_clean.rds')
+details = read_rds('../../data/clean_data/details_clean.rds')
+fatalities = read_rds('../../data/clean_data/fatalities_clean.rds')
 ```
 
 
