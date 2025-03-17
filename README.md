@@ -15,6 +15,7 @@ Liv, Max, Sarah, Helen, Andrew, & Adam
 
 ## Repository structure
 
+- `/examples_of_visualisation` -- Holds various examples of work that I did for the group project.
 - `/data` -- Datasets used in the project.
 - `/img` -- Images of graphs used in the project.
 - `investigation.Rmd` -- Used for data exploration and initial cleaning and tidying of the data (Data was intitially cleaned and tidied and then stored to reduce file space). 

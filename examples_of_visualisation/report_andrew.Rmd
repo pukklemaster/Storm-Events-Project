@@ -1,0 +1,389 @@
+---
+title: "Weather in the United States (1996-2023)"
+author: "Andrew Morris"
+date: "`r Sys.Date()`"
+output: html_document
+editor_options: 
+  markdown: 
+    wrap: sentence
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, fig.align = 'center')
+```
+
+```{r load-lib, echo=TRUE, message=FALSE, warning=FALSE}
+library(tidyverse)
+library(tidymodels)
+library(janitor)
+library(workflows)
+library(parsnip)
+library(tidyclust)
+library(usmap)
+library(gghighlight)
+library(knitr)
+library(xaringanExtra)
+library(doParallel)
+library(broom)
+library(patchwork)
+
+xaringanExtra::use_panelset()
+```
+
+# Research Question
+
+How have storm events changed over time, and what are the personal and monetary effects of these changes?
+
+We chose to investigate this question due to the increasingly dramatic shifts in climate observed in recent years.
+Many of these changes seem to be significantly impacting the United States, and we wanted to explore those impacts in our data.
+
+# Data
+
+Our data was sourced from the Storm Events Database of the National Oceanic and Atmospheric Administration (NOAA).
+Individual .csv files were downloaded and compiled using the script found in `data/compile_script`.
+The NOAA collects data on weather events in the United States.
+This includes information on event location, 50 variables related to event details (including, notably, time of occurrence and damages), and 10 variables related to event fatalities.
+In our analysis, we focused on over 1.6 million observations collected between 1996 and 2023.
+
+In our initial cleaning, we notably removed unwanted variables such as event narrative (a multi-sentence description of the event), merged date columns and converted them to date-times with `lubridate`, and added a column for total damage cost (summing crop and property damage).
+All damage information was converted from a string to a double.
+The cleaning script can be found in it's entirety below.
+
+# Load Data
+
+```{r load-data, eval=FALSE, echo=TRUE}
+details = read_csv('data/original_data/details_combined.csv')
+fatalities = read_csv('data/original_data/fatalities_combined.csv')
+```
+
+# Clean Data
+
+```{r cleaning_script, eval=FALSE, echo=TRUE}
+# Merge and convert formats of begin-date variables
+details <- details %>%
+  # Combine date elements
+  unite("BEGIN_DATE", BEGIN_YEARMONTH, BEGIN_DAY, sep = "") %>% 
+  mutate(
+    # Convert date to a character for union with time
+    BEGIN_DATE = as.character(BEGIN_DATE),
+    # Add leading zero if the time is 3 digits
+    BEGIN_TIME = case_when(
+      BEGIN_TIME < 1000 ~ sprintf("%04d", BEGIN_TIME),
+      TRUE ~ as.character(BEGIN_TIME)
+    )
+  ) %>%
+  # Unite date and time into one string
+  unite("BEGIN_DT", BEGIN_DATE, BEGIN_TIME, sep = " ") %>%
+  mutate(
+    # Convert to a datetime
+    BEGIN_DT = ymd_hm(BEGIN_DT)
+  )
+
+# Merge and convert formats of end-date variables
+details <- details %>%
+  # Combine date elements
+  unite("END_DATE", END_YEARMONTH, END_DAY, sep = "") %>% 
+  mutate(
+    # Convert date to a character for union with time
+    END_DATE = as.character(END_DATE),
+    # Add leading zero if the time is 3 digits
+    END_TIME = case_when(
+      END_TIME < 1000 ~ sprintf("%04d", END_TIME),
+      TRUE ~ as.character(END_TIME)
+    )
+  ) %>%
+  # Unite date and time into one string
+  unite("END_DT", END_DATE, END_TIME, sep = " ") %>%
+  mutate(
+    # Convert to a datetime
+    END_DT = ymd_hm(END_DT)
+  )
+
+# Remove unnecessary columns
+details <- details %>%
+  select(
+    -c(YEAR, MONTH_NAME, BEGIN_DATE_TIME, END_DATE_TIME, 
+       EVENT_NARRATIVE, EPISODE_NARRATIVE
+    )
+  )
+
+# Rename incorrect column names
+details <- details %>%
+  rename(
+    REGION = STATE,
+    REGION_FIPS = STATE_FIPS
+  )
+
+# Create duration variable 
+details <- details %>% 
+  mutate(
+    duration = END_DT - BEGIN_DT
+  ) %>% 
+    mutate(
+      duration = as.numeric(duration) / 60
+    )
+
+# Change cost suffixes
+details <- details %>% 
+  mutate(
+    DAMAGE_PROPERTY = as.numeric(gsub("K", "e+03", gsub("M", "e+06", DAMAGE_PROPERTY))),
+    DAMAGE_CROPS = as.numeric(gsub("K", "e+03", gsub("M", "e+06", DAMAGE_CROPS)))
+  )
+
+# Create a total damage column using crops and property
+details <- details %>%
+  mutate(
+    DAMAGE_TOTAL = DAMAGE_PROPERTY + DAMAGE_CROPS
+  )
+
+# Remove all records pertaining to an incomplete year
+details <- details %>% 
+  filter(
+    !year(BEGIN_DT) == '2024'
+  )
+
+# Use janitor to convert variable names to snakecase
+details <- details %>% 
+  clean_names()
+
+# Tidy the fatalities DataFrame
+fatalities <- fatalities %>% 
+  select(
+    -FAT_TIME, -FATALITY_DATE, -EVENT_YEARMONTH
+  ) %>% 
+    mutate(
+      YMD = ymd(paste(FAT_YEARMONTH, FAT_DAY))
+    ) %>% 
+      select(
+        -FAT_DAY, -FAT_YEARMONTH
+      )
+
+# Remove 2024 records
+fatalities <- fatalities %>%
+  filter(
+    !year(YMD) == '2024'
+  )
+
+# Use janitor to convert variables to snakecase
+fatalities <- fatalities %>% 
+  clean_names()
+
+details <- details %>%
+  mutate(
+    event_type = recode(
+      event_type,
+      "Hurricane (Typhoon)" = "Hurricane"
+    )
+  )
+
+#save cleaned data
+#write_rds(details, "data/clean_data/details_clean.rds", compress = "gz")
+#write_rds(fatalities, "data/clean_data/fatalities_clean.rds")
+```
+
+# Load Cleaned Data
+
+```{r load_clean_data, echo=TRUE}
+setwd("~/Storm-Events-Project/")
+details = read_rds('data/clean_data/details_clean.rds')
+fatalities = read_rds('data/clean_data/fatalities_clean.rds')
+```
+
+Regarding the `fatalities` dataset, I was interested in groups that appeared to be underrepresented and disproportionately affected by storm events.
+I chose to look at those aged 0-13 and 70+ as the groups of interest.
+To simplify the analysis, I separated our weather events into more general categories.
+
+```{r seperate weather events}
+events <- details %>% select(event_id, event_type)
+
+# separating events into categories
+# Marine - water related events or events relating to bodies of water
+# snow/ice - events related to cold or winter weather
+# Atmospheric - electric storms and other atmospheric events
+# Tropical - tropical weather events, hurricanes etc
+# heat/temp - events relating towards high temperatures or fire
+# rain - rain and hail
+events <-events %>% 
+  mutate(weather_cat = case_when(
+    event_type == "Astronomical Low Tide" ~ "Marine",
+    event_type == "Coastal Flood" ~ "Marine",
+    event_type == "Debris Flow" ~ "Marine",
+    event_type == "Flash Flood" ~ "Marine",
+    event_type == "Flood" ~ "Marine",
+    event_type == "High Surf" ~ "Marine",
+    event_type == "Lake-Effect Snow" ~ "Marine",
+    event_type == "Lakeshore Flood" ~ "Marine",
+    event_type == "Marine Hail" ~ "Marine",
+    event_type == "Marine High Wind" ~ "Marine",
+    event_type == "Marine Strong Wind" ~ "Marine",
+    event_type == "Marine Thunderstorm Wind" ~ "Marine",
+    event_type == "Rip Current" ~ "Marine",
+    event_type == "Seiche" ~ "Marine",
+    event_type == "Storm Surge/Tide" ~ "Marine",
+    event_type == "Tsunami" ~ "Marine",
+    event_type == "Waterspout" ~ "Marine",
+    event_type == "Sneakerwave" ~ "Marine",
+    event_type == "Marine Lightning" ~ "Marine",
+    event_type == "Marine Tropical Depression" ~ "Marine",
+    event_type == "Marine Hurricane/Typhoon" ~ "Marine",
+    event_type == "Marine Dense Fog" ~ "Marine",
+    event_type == "Avalanche" ~ "Ice/Snow",
+    event_type == "Blizzard" ~ "Ice/Snow",
+    event_type == "Cold/Wind Chill" ~ "Ice/Snow",
+    event_type == "Extreme Cold/Wind Chill" ~ "Ice/Snow",
+    event_type == "Frost/Freeze" ~ "Ice/Snow",
+    event_type == "Ice Storm" ~ "Ice/Snow",
+    event_type == "Heavy Snow" ~ "Ice/Snow",
+    event_type == "Sleet" ~ "Ice/Snow",
+    event_type == "Winter Storm" ~ "Ice/Snow",
+    event_type == "Winter Weather" ~ "Ice/Snow",
+    event_type == "Dense Fog" ~ "Atmospheric",
+    event_type == "Dense Smoke" ~ "Atmospheric",
+    event_type == "Freezing Fog" ~ "Atmospheric",
+    event_type == "Funnel Cloud" ~ "Atmospheric",
+    event_type == "High Wind" ~ "Atmospheric",
+    event_type == "Lightning" ~ "Atmospheric",
+    event_type == "Strong Wind" ~ "Atmospheric",
+    event_type == "Northern Lights" ~ "Atmospheric",
+    event_type == "Thunderstorm Wind" ~ "Atmospheric",
+    event_type == "Tornado" ~ "Atmospheric",
+    event_type == "Dust Devil" ~ "Atmospheric",
+    event_type == "Dust Storm" ~ "Atmospheric",
+    event_type == "Hurricane (Typhoon)" ~ "Tropical",
+    event_type == "Hurricane" ~ "Tropical",
+    event_type == "Tropical Depression" ~ "Tropical",
+    event_type == "Tropical Storm" ~ "Tropical",
+    event_type == "Heat" ~ "Fire/HiTemps",
+    event_type == "Excessive Heat" ~ "Fire/HiTemps",
+    event_type == "Volcanic Ash" ~ "Fire/HiTemps",
+    event_type == "Volcanic Ashfall" ~ "Fire/HiTemps",
+    event_type == "Drought" ~ "Fire/HiTemps",
+    event_type == "Wildfire" ~ "Fire/HiTemps",
+    TRUE ~ "Rain"
+  ))
+
+
+```
+
+```{r median age group}
+median_fatality <- filter(fatalities, fatality_age < 70 & fatality_age > 13)
+median_fatality <- right_join(events, median_fatality)
+```
+
+```{r old age group}
+elderly_fatality <- filter(fatalities, fatality_age >= 70)
+elderly_fatality <- right_join(events, elderly_fatality)
+```
+
+```{r young age group}
+young_fatality <- filter(fatalities, fatality_age <= 13) 
+young_fatality <- right_join(events, young_fatality)
+```
+
+```{r}
+# Combining fatalities
+median_fatality <- median_fatality %>%
+  add_column(age_group = "median")
+
+elderly_fatality <- elderly_fatality %>%
+  add_column(age_group = "elderly")
+
+young_fatality <- young_fatality %>%
+  add_column(age_group = "young")
+
+old_young <- rbind(elderly_fatality, young_fatality)
+combine_fatality <- rbind(old_young, median_fatality)
+
+```
+
+```{r}
+# plot of age groups and fatality type
+ggplot(na.omit(combine_fatality), aes(x=age_group, fill=weather_cat)) +
+  geom_bar(position = "fill") +
+  scale_fill_brewer(palette = "Dark2") +
+  labs(x= "Age group", y= "Proportion of fatalities for each category", fill= "Weather Categories", title = "Proportion of Each Age Group Affected by Each Weather Category") +
+  theme_bw() # Proportion of each age group affected by different weather categories labelled above
+```
+
+This allows us to see how different age groups are disproportionately affected by different types of weather, giving us a better understanding of who is most vulnerable to storm events.
+For example, you can see that both `Fire/HiTemps` and `Tropical` events are most dangerous for the elderly group, while `Atmospheric` and `Marine` events are most dangerous for younger individuals.
+
+```{r}
+elderly_category <- filter(elderly_fatality, weather_cat == "Fire/HiTemps" | weather_cat == "Tropical") %>%
+ggplot(aes(x=event_type, fill=weather_cat)) +
+  geom_bar() +
+  scale_fill_brewer(palette = "Dark2") +
+  labs(x ="Weather Event", y ="Amount of Fatalities", title="Elderly Fatalities by Most Popular Weather Categories", fill="Weather Category") +
+  theme_bw()+
+  coord_flip() 
+
+elderly_category
+```
+
+```{r}
+young_category <- filter(young_fatality, weather_cat == "Marine" | weather_cat == "Atmospheric") %>%
+ggplot(aes(x=event_type, fill=weather_cat)) +
+  geom_bar() +
+  scale_fill_brewer(palette = "Dark2") +
+  labs(x ="Weather Event", y ="Amount of Fatalities", title="Young Fatalities by Most Popular Weather Categories", fill="Weather Category") +
+  theme_bw()+
+  coord_flip() # young fatality age group plotted with the 2 largest disproportionate causes of fatalities
+
+young_category
+```
+
+Specifically, I found that the younger age group is most affected by floods and tornadoes, whilst the elderly group is most affected by heat and hurricanes.
+
+```{r}
+combine_facet <- ggplot(na.omit(combine_fatality), aes(x=age_group, fill=weather_cat)) +
+  geom_bar(position = "fill") +
+  scale_fill_brewer(palette = "Dark2") +
+  labs(x= "Age group", y= "Proportion of fatalities for each category over time", fill= "Weather Categories", title = "Proportion of Each Age Group Affected by Each Weather Category") +
+  scale_x_discrete(labels = c(
+    "elderly" = "E",
+    "median" = "M",
+    "young" = "Y"
+  )) +
+  theme_bw() +
+  theme(axis.text.y = element_blank()) +
+  facet_wrap(year(ymd)~.) 
+
+combine_facet
+```
+
+I can also see how these proportions have changed over the years of recorded data, and even note that in years of extraordinary weather (such as Hurricane Katrina in 2005 and a set of major tornadoes in 2011), weather events will continue to disproportionately affect the respective age groups.
+
+```{r}
+# are Fire/HiTemps increasing?
+
+combine_lines <- filter(combine_fatality, weather_cat == "Fire/HiTemps") %>%
+  ggplot(aes(x=year(ymd), colour=event_type)) +
+  geom_line(aes(fill=..count..),stat="bin", binwidth = 1, linewidth = 1) +
+  labs(x="Years",y="Amount of Fatalities",title="Amount of Fire and High Temperature Fatalities Over Time",colour="Event Types") +
+  scale_colour_manual(values=c("midnightblue", "purple2", "mediumorchid2")) +
+  theme_bw() 
+
+# plot looks at the changes of Fire/HiTemps weather_cat over years
+
+combine_lines
+
+combine_hist <- filter(na.omit(combine_fatality), event_type == "Heat" & year(ymd) >= "1995" & year(ymd) <= "2008") %>%
+  ggplot(aes(x=year(ymd))) +
+  geom_histogram(binwidth = 1) +
+  labs(y="Amount of fatalities",x="Years",title="Unusually High Fire and High Temperature Fatalities Between 1998 and 2003") +
+  theme_bw() # Histogram plot of extraordinary data between 1998 and 2003
+
+combine_hist
+```
+
+I also found that, over the past 20 years, the fatalities resulting from `Fire/HiTemps` has increased.
+This could possibly be the result of climate change impacting weather in the United States.
+
+## References
+
+National Oceanic and Atmospheric Administration (2023).
+*Past Events*.
+[online] Noaa.gov.
+Available at: <https://psl.noaa.gov/enso/past_events.html> [Accessed Nov. 2024].
+
+NOAA Weather service, provided data for the project, accessed at URL: <https://www.ncdc.noaa.gov/stormevents/faq.jsp> NOAA Weather service, data format guide, accessed at URL: <https://www.ncei.noaa.gov/pub/data/swdi/stormevents/csvfiles/Storm-Data-Bulk-csv-Format.pdf>
