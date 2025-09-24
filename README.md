@@ -6,12 +6,12 @@
 
 Liv, Max, Sarah, Helen, Andrew, & Adam
 
-- Olivia Harris (s2286331) oliviaharris1
-- Maxwell Pohlmann (s2641522) MaxwellPohlman
-- Sarah Stewart (s2675691) sarahstewart
-- Helen Miller (s2494538) hellenrmiller
-- Andrew Morris (s2522724) pukklemaster
-- Adam Laycock (s2531549) adamlaycock
+- Olivia Harris  oliviaharris1
+- Maxwell Pohlmann  MaxwellPohlman
+- Sarah Stewart  sarahstewart
+- Helen Miller  hellenrmiller
+- Andrew Morris  pukklemaster
+- Adam Laycock  adamlaycock
 
 ## Repository structure
 
